@@ -1,4 +1,5 @@
 from neo4j import GraphDatabase
+
 from src.backend.app.config import settings
 
 # Inicjalizacja oficjalnego sterownika Neo4j
