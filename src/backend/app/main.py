@@ -1,9 +1,11 @@
 import os
+
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from src.backend.app.database.constraints import setup_database_constraints
+
 from src.backend.app.database.connection import close_driver
+from src.backend.app.database.constraints import setup_database_constraints
 
 app = FastAPI(title="SharkTrackingGraph API")
 
