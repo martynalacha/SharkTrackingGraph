@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Database Service
+  neo4j:
+    image: neo4j:5.12-community
+    container_name: shark_neo4j
+    ports:
+      - "7474:7474" # Neo4j Browser (GUI)
+      - "7687:7687" # Bolt protocol
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+
+  # Web Service (Backend FastAPI + Frontend SPA)
+  web:
+    build: .
+    container_name: shark_web
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+    environment:
+      - NEO4J_URI=bolt://${NEO4J_HOST}:${NEO4J_PORT}
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+    depends_on:
+      - neo4j
+
+volumes:
+  neo4j_data:
+  neo4j_logs:

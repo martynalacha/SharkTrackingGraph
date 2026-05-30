@@ -1,0 +1,28 @@
+repos:
+  # 1. Oficjalne narzędzia pomocnicze pre-commit
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace      # Usuwanie spacji na końcach linii
+      - id: end-of-file-fixer        # Wymuszanie pustej linii na końcu pliku
+      - id: check-yaml               # Walidacja plików YAML
+      - id: check-toml               # Walidacja plików TOML
+      - id: check-merge-conflict     # Blokowanie znaczników konfliktów Git
+      - id: check-added-large-files  # Blokowanie dużych plików (>5MB)
+        args: ['--maxkb=5000']
+
+  # 2. Wykrywanie sekretów i haseł
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package-lock.json
+
+  # 3. Linter i Formatter Ruff (Twój obecny krok)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.2
+    hooks:
+      - id: ruff
+        args: [ --fix ]
+      - id: ruff-format

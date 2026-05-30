@@ -1,0 +1,13 @@
+[tool.ruff]
+# Target version of the Python runtime
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+# E (Error), F (Pyflakes), B (Bugbear), I (Isort)
+select = ["E", "F", "B", "I"]
+ignore = []
+
+[tool.ruff.lint.isort]
+# Global layout configuration for import sorting
+known-first-party = ["src"]
