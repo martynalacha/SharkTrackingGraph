@@ -1,28 +1,9 @@
-site_name: Shark Tracking Graph Docs
-site_description: API for tracking shark migration patterns using FastAPI and Neo4j
-author: Martyna Lach
+site_name: "Shark Tracking Graph Docs"
+site_description: "API for tracking shark migration patterns using FastAPI and Neo4j"
 
 theme:
   name: material
   language: pl
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: teal
-      accent: cyan
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: teal
-      accent: cyan
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
 
 nav:
   - Home: index.md
-
-plugins:
-  - searchV
