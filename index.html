@@ -61,6 +61,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#shark-tracking-graph" class="md-skip">
+          Przejdź do treści
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -195,6 +200,26 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="." class="md-nav__link md-nav__link--active">
         
@@ -212,6 +237,75 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Spis treści">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Spis treści
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the Stack
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running the Stack">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-environment-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Environment Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-launching-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Launching Containers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-accessing-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Accessing the Application
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -234,6 +328,66 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Spis treści
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the Stack
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running the Stack">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-environment-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Environment Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-launching-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Launching Containers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-accessing-the-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Accessing the Application
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -250,9 +404,33 @@
 
 
 
-  <h1>Home</h1>
+<h1 id="shark-tracking-graph">Shark Tracking Graph</h1>
+<p>The project focuses on deploying a graph database system to map ocean shark migration routes using telemetry data. By leveraging native Neo4j graph processing, the system converts geographic coordinate readings into specific oceanic zones without using expensive SQL joins. This topological data enables efficient calculation of movement trajectories, behavioral patterns, and population densities across different sectors.</p>
+<hr />
+<h2 id="running-the-stack">Running the Stack</h2>
+<p>To launch the entire application stack (FastAPI backend, Vanilla JS frontend, and Neo4j graph database) in a local development environment, you only need Docker and Docker Compose installed.</p>
+<h3 id="1-environment-configuration">1. Environment Configuration</h3>
+<p>Create a <code>.env</code> file in the root directory of the project and define your database credentials:</p>
+<pre><code class="language-env"># Neo4j Database Credentials (Example configuration)
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=your_secure_password_here
+NEO4J_HOST=neo4j
+NEO4J_PORT=7687
 
+# FastAPI Environment Configuration
+ENV_MODE=development
 
+</code></pre>
+<h3 id="2-launching-containers">2. Launching Containers</h3>
+<p>Run the following command in your terminal to build the backend image and start all services:</p>
+<pre><code class="language-bash">docker compose up --build
+</code></pre>
+<h3 id="3-accessing-the-application">3. Accessing the Application</h3>
+<p>Once the containers are fully initialized, the stack exposes the following endpoints:</p>
+<ul>
+<li><strong>Frontend UI &amp; REST API:</strong> http://localhost:8000</li>
+<li><strong>Neo4j Browser (Database GUI):</strong> http://localhost:7474</li>
+</ul>
 
 
 

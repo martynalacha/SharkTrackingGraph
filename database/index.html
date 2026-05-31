@@ -21,7 +21,7 @@
     
     
       
-        <title>Database - Shark Tracking Graph Docs</title>
+        <title>Database Architecture & Schema - Shark Tracking Graph Docs</title>
       
     
     
@@ -61,6 +61,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#database-architecture-schema" class="md-skip">
+          Przejdź do treści
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -93,7 +98,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Database
+              Database Architecture &amp; Schema
             
           </span>
         </div>
@@ -226,6 +231,38 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Spis treści
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#current-graph-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Graph Schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#active-constraints-and-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Active Constraints and Indexes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -242,9 +279,38 @@
 
 
 
-  <h1>Database</h1>
-
-
+<h1 id="database-architecture-schema">Database Architecture &amp; Schema</h1>
+<h2 id="current-graph-schema">Current Graph Schema</h2>
+<p><em>Failed to generate schema diagram: list.append() takes exactly one argument (2 given)</em></p>
+<hr />
+<h2 id="active-constraints-and-indexes">Active Constraints and Indexes</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Type</th>
+<th style="text-align: left;">Entity</th>
+<th style="text-align: left;">Properties</th>
+<th style="text-align: left;">State</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">grid_id_unique</td>
+<td style="text-align: left;">NODE_PROPERTY_UNIQUENESS</td>
+<td style="text-align: left;">NODE(:OceanGrid)</td>
+<td style="text-align: left;">gridId</td>
+<td style="text-align: left;">ENABLED</td>
+</tr>
+<tr>
+<td style="text-align: left;">shark_id_unique</td>
+<td style="text-align: left;">NODE_PROPERTY_UNIQUENESS</td>
+<td style="text-align: left;">NODE(:Shark)</td>
+<td style="text-align: left;">sharkId</td>
+<td style="text-align: left;">ENABLED</td>
+</tr>
+</tbody>
+</table>
 
 
 
