@@ -1,3 +1,3 @@
 # Specyfikacja API
 
-::: backend.app.main:app
+::: src.backend.app.main.app
