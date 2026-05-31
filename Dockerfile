@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
@@ -17,7 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all source files (used as fallback or production build)
 COPY ./src ./src
 
+ENV PYTHONPATH=/app
+
 EXPOSE 8000
 
 # The --reload flag enables hot-reloading for development
-CMD ["uvicorn", "src.backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "src.backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
