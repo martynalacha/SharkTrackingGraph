@@ -1,7 +1,7 @@
 [tool.ruff]
 # Target version of the Python runtime
-target-version = "py311"
-line-length = 88
+target-version = "py312"
+line-length = 120
 
 [tool.ruff.lint]
 # E (Error), F (Pyflakes), B (Bugbear), I (Isort)

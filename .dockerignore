@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Środowisko lokalne Pythona
+.venv
+venv
+ENV
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Narzędzia i lintery
+.pytest_cache/
+.ruff_cache/
+.pre-commit-config.yaml
+.github/
+
+# Dokumentacja
+site/
+docs/
+mkdocs.yml
+
+# Pliki systemowe i konfiguracyjne IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
