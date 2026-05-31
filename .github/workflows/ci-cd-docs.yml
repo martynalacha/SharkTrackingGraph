@@ -39,9 +39,7 @@ jobs:
     - name: Install dependencies and tools
       run: |
         python -m pip install --upgrade pip
-        # Instalacja driverów i pakietów aplikacji niezbędnych do wykonania skryptu
         if [ -f src/backend/requirements.txt ]; then pip install -r src/backend/requirements.txt; fi
-        # Instalacja narzędzi do dokumentacji
         pip install mkdocs mkdocs-material "mkdocstrings[python]"
 
     - name: Set up database constraints
@@ -53,9 +51,10 @@ jobs:
         python src/backend/app/database/generate_docs.py
 
     - name: Deploy documentation to GitHub Pages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PYTHONPATH: ${{ github.workspace }}
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         mkdocs gh-deploy --force
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

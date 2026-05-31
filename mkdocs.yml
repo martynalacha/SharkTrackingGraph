@@ -15,5 +15,4 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          setup_commands:
-            paths: [.]
+          paths: ["."]
