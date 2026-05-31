@@ -4,17 +4,18 @@ on:
   push:
     branches: [ main ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PYTHONPATH: "."
+  NEO4J_URI: bolt://localhost:7687
+  NEO4J_USER: neo4j
+  NEO4J_PASSWORD: secret_password_ci
+
 jobs:
   deploy-docs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      PYTHONPATH: ${{ github.workspace }}
-      NEO4J_URI: bolt://localhost:7687
-      NEO4J_USER: neo4j
-      NEO4J_PASSWORD: secret_password_ci
 
     services:
       neo4j:
@@ -39,11 +40,8 @@ jobs:
     - name: Install dependencies and tools
       run: |
         python -m pip install --upgrade pip
-        # 1. Instalacja standardowych zależności z pliku
         if [ -f src/backend/requirements.txt ]; then pip install -r src/backend/requirements.txt; fi
-        # 2. Wymuszenie aktualizacji FastAPI i Uvicorn do wsparcia Python 3.13
         pip install --upgrade fastapi uvicorn
-        # 3. Instalacja narzędzi dokumentacji
         pip install mkdocs mkdocs-material "mkdocstrings[python]"
 
     - name: Set up database constraints
@@ -57,7 +55,7 @@ jobs:
     - name: Deploy documentation to GitHub Pages
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PYTHONPATH: ${{ github.workspace }}
+        PYTHONPATH: "."
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
