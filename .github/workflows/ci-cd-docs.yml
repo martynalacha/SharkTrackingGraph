@@ -42,7 +42,7 @@ jobs:
         # Instalacja driverów i pakietów aplikacji niezbędnych do wykonania skryptu
         if [ -f src/backend/requirements.txt ]; then pip install -r src/backend/requirements.txt; fi
         # Instalacja narzędzi do dokumentacji
-        pip install mkdocs mkdocs-material
+        pip install mkdocs mkdocs-material "mkdocstrings[python]"
 
     - name: Set up database constraints
       run: |

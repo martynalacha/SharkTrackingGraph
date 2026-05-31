@@ -39,7 +39,8 @@ def generate_meta_diagram() -> str:
         mermaid_lines = ["", "```mermaid", "graph TD"]
         mermaid_lines.extend(sorted(list(nodes_definitions)))
         mermaid_lines.extend(sorted(list(relationships_definitions)))
-        mermaid_lines.append("```", "")
+        mermaid_lines.append("```")
+        mermaid_lines.append("")
 
         return "\n".join(mermaid_lines)
 
