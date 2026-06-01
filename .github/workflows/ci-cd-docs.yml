@@ -46,20 +46,20 @@ jobs:
 
     - name: Set up database constraints
       env:
-        PYTHONPATH: "."
+        PYTHONPATH: ".:src"
       run: |
         python -c "from src.backend.app.database.constraints import setup_database_constraints; setup_database_constraints()"
 
     - name: Generate dynamic documentation files
       env:
-        PYTHONPATH: "."
+        PYTHONPATH: ".:src"
       run: |
         python src/backend/app/database/generate_docs.py
 
     - name: Deploy documentation to GitHub Pages
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PYTHONPATH: "."
+        PYTHONPATH: ".:src"
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
