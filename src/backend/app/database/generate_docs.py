@@ -1,11 +1,22 @@
 import json
 import os
+import sys
 
-from src.backend.app.database.meta import (
+# Dynamic path injection to resolve 'backend' and 'src' modules smoothly
+current_dir = os.path.dirname(os.path.abspath(__file__))
+backend_root = os.path.dirname(os.path.dirname(current_dir))
+src_root = os.path.dirname(backend_root)
+
+if backend_root not in sys.path:
+    sys.path.insert(0, backend_root)
+if src_root not in sys.path:
+    sys.path.insert(0, src_root)
+
+from src.backend.app.database.meta import (  # noqa: E402
     generate_meta_constraints,
     generate_meta_diagram,
 )
-from src.backend.app.main import app
+from src.backend.app.main import app  # noqa: E402
 
 
 def generate_openapi_schema():
@@ -25,21 +36,27 @@ def generate_openapi_schema():
 
 def main():
     """Generates all dynamic documentation files for the project."""
-    # Ensure the target documentation directory exists
     os.makedirs("docs", exist_ok=True)
 
     # 1. Generate Database Documentation
     diagram = generate_meta_diagram()
     constraints = generate_meta_constraints()
 
+    # Formatted with proper markdown code blocks for Mermaid and table headers for constraints
     content = f"""# Database Architecture & Schema
 
 ## Current Graph Schema
+
+```mermaid
 {diagram}
+```
 
 ---
 
 ## Active Constraints and Indexes
+
+| Name | Type | Entity | Properties | State |
+| :--- | :--- | :--- | :--- | :--- |
 {constraints}
 """
 
@@ -51,6 +68,5 @@ def main():
     # 2. Generate OpenAPI Schema for REST API Specification
     generate_openapi_schema()
 
-
-if __name__ == "__main__":
-    main()
+    if __name__ == "__main__":
+        main()
