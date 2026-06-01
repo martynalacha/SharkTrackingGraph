@@ -54,7 +54,7 @@ jobs:
       env:
         PYTHONPATH: ".:src"
       run: |
-        python -c "from src.backend.app.database.seeding import seed_database; seed_database()"
+        python -c "from src.backend.app.database.seeding import seed_database; seed_database('src/backend/app/database/clean_data.py')"
 
     - name: Generate dynamic documentation files
       env:
