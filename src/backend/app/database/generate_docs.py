@@ -18,12 +18,15 @@ from src.backend.app.database.meta import (  # noqa: E402
 )
 from src.backend.app.main import app  # noqa: E402
 
+# Absolute path targeting the global 'docs' directory at the root of the project
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
+DOCS_DIR = os.path.join(PROJECT_ROOT, "docs")
+
 
 def generate_openapi_schema():
     """Extracts the full OpenAPI schema from FastAPI and saves it as JSON."""
-    docs_dir = "docs"
-    os.makedirs(docs_dir, exist_ok=True)
-    schema_path = os.path.join(docs_dir, "openapi.json")
+    os.makedirs(DOCS_DIR, exist_ok=True)
+    schema_path = os.path.join(DOCS_DIR, "openapi.json")
 
     # Fetch the schema generated automatically by FastAPI
     openapi_data = app.openapi()
@@ -31,7 +34,7 @@ def generate_openapi_schema():
     with open(schema_path, "w", encoding="utf-8") as f:
         json.dump(openapi_data, f, ensure_ascii=False, indent=2)
 
-    print("Successfully generated docs/openapi.json")
+    print(f"Successfully generated {schema_path}")
 
 
 def main():

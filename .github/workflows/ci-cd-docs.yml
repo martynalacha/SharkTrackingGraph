@@ -24,6 +24,11 @@ jobs:
           - 7474:7474
         env:
           NEO4J_AUTH: neo4j/secret_password_ci
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p secret_password_ci 'RETURN 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - name: Checkout repository
@@ -39,10 +44,9 @@ jobs:
     - name: Install dependencies and tools
       run: |
         python -m pip install --upgrade pip
-        # Instalacja wszystkich wymaganych pakietów w jednym środowisku
         if [ -f src/backend/requirements.txt ]; then pip install -r src/backend/requirements.txt; fi
         pip install --upgrade fastapi uvicorn
-        pip install mkdocs mkdocs-material "mkdocstrings[python]"
+        pip install mkdocs mkdocs-material
 
     - name: Set up database constraints
       env:
