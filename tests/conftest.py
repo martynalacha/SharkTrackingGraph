@@ -1,8 +1,8 @@
 import pytest
+from httpx import ASGITransport, AsyncClient
 
 # Import the actual FastAPI application instance
-from app.main import app
-from httpx import ASGITransport, AsyncClient
+from src.backend.app.main import app
 
 
 @pytest.fixture(scope="session")

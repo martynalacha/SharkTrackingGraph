@@ -13,4 +13,4 @@ ignore = []
 known-first-party = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src/backend"]
+pythonpath = [".", "src"]
