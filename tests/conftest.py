@@ -15,7 +15,7 @@ def anyio_backend():
 
 
 @pytest.fixture
-async def async_client():
+async def async_client(anyio_backend):
     """
     Provides a contextual isolated asynchronous client for FastAPI integration testing.
     """
