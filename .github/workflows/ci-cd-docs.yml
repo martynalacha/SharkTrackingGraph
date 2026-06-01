@@ -50,6 +50,12 @@ jobs:
       run: |
         python -c "from src.backend.app.database.constraints import setup_database_constraints; setup_database_constraints()"
 
+    - name: Seed database data
+      env:
+        PYTHONPATH: ".:src"
+      run: |
+        python -c "from src.backend.app.database.seeding import seed_database; seed_database()"
+
     - name: Generate dynamic documentation files
       env:
         PYTHONPATH: ".:src"
