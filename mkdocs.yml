@@ -13,6 +13,9 @@ nav:
 plugins:
   - search
 
+extra_templates:
+  - openapi.json
+
 markdown_extensions:
   - tables
   - fenced_code
