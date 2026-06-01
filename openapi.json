@@ -1,0 +1,1150 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SharkTrackingGraph API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/sharks/": {
+      "get": {
+        "tags": [
+          "Sharks"
+        ],
+        "summary": "Get Sharks",
+        "description": "Returns a list of all sharks in the database.\nIf a species query parameter is provided, filters the result by that species.",
+        "operationId": "get_sharks_api_sharks__get",
+        "parameters": [
+          {
+            "name": "species",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Filter sharks by exact species name",
+              "title": "Species"
+            },
+            "description": "Filter sharks by exact species name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Sharks"
+        ],
+        "summary": "Create Shark",
+        "description": "Creates a new Shark node in the database.",
+        "operationId": "create_shark_api_sharks__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharkCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sharks/search": {
+      "get": {
+        "tags": [
+          "Sharks"
+        ],
+        "summary": "Search Shark",
+        "description": "Finds a specific shark's full profile by performing a case-insensitive search\non both its name and sharkId.",
+        "operationId": "search_shark_api_sharks_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Search term matching sharkId or shark name",
+              "title": "Q"
+            },
+            "description": "Search term matching sharkId or shark name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sharks/{shark_id}/trajectory": {
+      "get": {
+        "tags": [
+          "Sharks"
+        ],
+        "summary": "Get Shark Trajectory",
+        "description": "Returns the chronological history of geographic points pinged by a specific shark,\nincluding zone coordinates and entity metadata for map visualization.",
+        "operationId": "get_shark_trajectory_api_sharks__shark_id__trajectory_get",
+        "parameters": [
+          {
+            "name": "shark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Shark Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sharks/{shark_id}": {
+      "put": {
+        "tags": [
+          "Sharks"
+        ],
+        "summary": "Update Shark",
+        "description": "Updates the properties of an existing Shark node matching the sharkId.",
+        "operationId": "update_shark_api_sharks__shark_id__put",
+        "parameters": [
+          {
+            "name": "shark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Shark Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharkUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Sharks"
+        ],
+        "summary": "Delete Shark",
+        "description": "Deletes a Shark node from the database along with all its connected relations.",
+        "operationId": "delete_shark_api_sharks__shark_id__delete",
+        "parameters": [
+          {
+            "name": "shark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Shark Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zones/markers": {
+      "get": {
+        "tags": [
+          "Ocean Zones"
+        ],
+        "summary": "Get Zone Markers",
+        "description": "Returns aggregate map marker data for all registered ocean grids,\nincluding unique shark counts and the latest registered activities.",
+        "operationId": "get_zone_markers_api_zones_markers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zones/{grid_id}/bounds": {
+      "get": {
+        "tags": [
+          "Ocean Zones"
+        ],
+        "summary": "Get Zone Time Bounds",
+        "description": "Returns the absolute earliest and latest ping timestamps recorded within\na specific ocean zone or globally for all zones combined.",
+        "operationId": "get_zone_time_bounds_api_zones__grid_id__bounds_get",
+        "parameters": [
+          {
+            "name": "grid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Grid Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zones/{grid_id}": {
+      "get": {
+        "tags": [
+          "Ocean Zones"
+        ],
+        "summary": "Get Zone Analysis",
+        "description": "Returns the details of a specific ocean sector along with a list of all\nunique sharks recorded within this zone inside the specified time range.",
+        "operationId": "get_zone_analysis_api_zones__grid_id__get",
+        "parameters": [
+          {
+            "name": "grid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Grid Id"
+            }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Start timestamp filter (YYYY-MM-DD HH:MM:SS)",
+              "default": "2000-01-01 00:00:00",
+              "title": "Start Time"
+            },
+            "description": "Start timestamp filter (YYYY-MM-DD HH:MM:SS)"
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "End timestamp filter (YYYY-MM-DD HH:MM:SS)",
+              "default": "2030-12-31 23:59:59",
+              "title": "End Time"
+            },
+            "description": "End timestamp filter (YYYY-MM-DD HH:MM:SS)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/recalibrate": {
+      "post": {
+        "tags": [
+          "Admin Operations"
+        ],
+        "summary": "Trigger Recalibration",
+        "description": "Admin-only endpoint to trigger dynamic spatial re-mapping\nwhenever the OceanGrid architecture is modified.",
+        "operationId": "trigger_recalibration_api_admin_recalibrate_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/api/telemetry/date-range": {
+      "get": {
+        "tags": [
+          "Admin Operations"
+        ],
+        "summary": "Get Telemetry Date Range",
+        "description": "Returns the global min and max timestamp across all PINGED_AT relations.",
+        "operationId": "get_telemetry_date_range_api_admin_api_telemetry_date_range_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sharks/": {
+      "post": {
+        "tags": [
+          "Admin Shark Management"
+        ],
+        "summary": "Create New Shark",
+        "description": "Creates a single new Shark node in the database and dynamically fetches\nits specific species image from Wikipedia without reloading any other data.",
+        "operationId": "create_new_shark_api_admin_sharks__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharkCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ]
+      }
+    },
+    "/api/admin/sharks/{shark_id}": {
+      "put": {
+        "tags": [
+          "Admin Shark Management"
+        ],
+        "summary": "Update Shark Profile",
+        "description": "Updates the structural profile parameters of an existing Shark node by its sharkId.",
+        "operationId": "update_shark_profile_api_admin_sharks__shark_id__put",
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Shark Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharkUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Shark Management"
+        ],
+        "summary": "Delete Shark Profile",
+        "description": "Performs a cascading DETACH DELETE operation to purge a Shark node\nand all its associated telemetry relations.",
+        "operationId": "delete_shark_profile_api_admin_sharks__shark_id__delete",
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Shark Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sharks/import/telemetry": {
+      "post": {
+        "tags": [
+          "Admin Shark Management"
+        ],
+        "summary": "Import Telemetry Csv",
+        "description": "Ingests raw telemetry data from an uploaded CSV file, resolving spatial references\nand binding Shark nodes directly to the nearest OceanGrid nodes via PINGED_AT relations.",
+        "operationId": "import_telemetry_csv_api_admin_sharks_import_telemetry_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_telemetry_csv_api_admin_sharks_import_telemetry_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ]
+      }
+    },
+    "/api/admin/zones/": {
+      "post": {
+        "tags": [
+          "Admin Zone Management"
+        ],
+        "summary": "Create Ocean Zone",
+        "description": "Defines a new ocean sector node (OceanGrid) in the database spatial system.",
+        "operationId": "create_ocean_zone_api_admin_zones__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OceanGridCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OceanGridResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ]
+      }
+    },
+    "/api/admin/zones/{grid_id}": {
+      "put": {
+        "tags": [
+          "Admin Zone Management"
+        ],
+        "summary": "Update Ocean Zone",
+        "description": "Updates the coordinates or properties of an existing OceanGrid node.",
+        "operationId": "update_ocean_zone_api_admin_zones__grid_id__put",
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "grid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Grid Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OceanGridCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OceanGridResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Zone Management"
+        ],
+        "summary": "Delete Ocean Zone",
+        "description": "Performs a cascading DETACH DELETE to safely remove an OceanGrid node and its topology edges.",
+        "operationId": "delete_ocean_zone_api_admin_zones__grid_id__delete",
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "grid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Grid Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zones/analysis/clusters": {
+      "get": {
+        "tags": [
+          "Zone Clusters"
+        ],
+        "summary": "Get Zone Clusters",
+        "description": "Returns a ranked list of ocean zones with the highest traffic intensity (pings)\nwithin a specified time range, effectively detecting biological hot-spots/clusters.",
+        "operationId": "get_zone_clusters_api_zones_analysis_clusters_get",
+        "parameters": [
+          {
+            "name": "start_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Start timestamp filter (YYYY-MM-DD HH:MM:SS)",
+              "default": "2000-01-01 00:00:00",
+              "title": "Start Time"
+            },
+            "description": "Start timestamp filter (YYYY-MM-DD HH:MM:SS)"
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "End timestamp filter (YYYY-MM-DD HH:MM:SS)",
+              "default": "2030-12-31 23:59:59",
+              "title": "End Time"
+            },
+            "description": "End timestamp filter (YYYY-MM-DD HH:MM:SS)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of top hot-spots to return",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of top hot-spots to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Serve Frontend",
+        "operationId": "serve_frontend__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_import_telemetry_csv_api_admin_sharks_import_telemetry_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_telemetry_csv_api_admin_sharks_import_telemetry_post"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "OceanGridCreate": {
+        "properties": {
+          "centerLat": {
+            "type": "number",
+            "title": "Centerlat",
+            "example": 34.5
+          },
+          "centerLon": {
+            "type": "number",
+            "title": "Centerlon",
+            "example": -75.2
+          },
+          "gridId": {
+            "type": "string",
+            "title": "Gridid",
+            "example": "ZONE_999"
+          }
+        },
+        "type": "object",
+        "required": [
+          "centerLat",
+          "centerLon",
+          "gridId"
+        ],
+        "title": "OceanGridCreate"
+      },
+      "OceanGridResponse": {
+        "properties": {
+          "centerLat": {
+            "type": "number",
+            "title": "Centerlat",
+            "example": 34.5
+          },
+          "centerLon": {
+            "type": "number",
+            "title": "Centerlon",
+            "example": -75.2
+          },
+          "gridId": {
+            "type": "string",
+            "title": "Gridid",
+            "example": "ZONE_999"
+          }
+        },
+        "type": "object",
+        "required": [
+          "centerLat",
+          "centerLon",
+          "gridId"
+        ],
+        "title": "OceanGridResponse"
+      },
+      "SharkCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "example": "Deep Blue"
+          },
+          "species": {
+            "type": "string",
+            "title": "Species",
+            "example": "White Shark (Carcharodon carcharias)"
+          },
+          "gender": {
+            "type": "string",
+            "title": "Gender",
+            "example": "Female"
+          },
+          "length": {
+            "type": "number",
+            "title": "Length",
+            "example": 6.1
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight",
+            "example": 2200.0
+          },
+          "speciesImage": {
+            "type": "string",
+            "title": "Speciesimage",
+            "default": "",
+            "example": "https://upload.wikimedia.org/wikipedia/commons/..."
+          },
+          "sharkId": {
+            "type": "string",
+            "title": "Sharkid",
+            "example": "99999"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "species",
+          "gender",
+          "length",
+          "weight",
+          "sharkId"
+        ],
+        "title": "SharkCreate"
+      },
+      "SharkResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "example": "Deep Blue"
+          },
+          "species": {
+            "type": "string",
+            "title": "Species",
+            "example": "White Shark (Carcharodon carcharias)"
+          },
+          "gender": {
+            "type": "string",
+            "title": "Gender",
+            "example": "Female"
+          },
+          "length": {
+            "type": "number",
+            "title": "Length",
+            "example": 6.1
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight",
+            "example": 2200.0
+          },
+          "speciesImage": {
+            "type": "string",
+            "title": "Speciesimage",
+            "default": "",
+            "example": "https://upload.wikimedia.org/wikipedia/commons/..."
+          },
+          "sharkId": {
+            "type": "string",
+            "title": "Sharkid",
+            "example": "99999"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "species",
+          "gender",
+          "length",
+          "weight",
+          "sharkId"
+        ],
+        "title": "SharkResponse"
+      },
+      "SharkUpdate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "example": "Deep Blue"
+          },
+          "species": {
+            "type": "string",
+            "title": "Species",
+            "example": "White Shark (Carcharodon carcharias)"
+          },
+          "gender": {
+            "type": "string",
+            "title": "Gender",
+            "example": "Female"
+          },
+          "length": {
+            "type": "number",
+            "title": "Length",
+            "example": 6.1
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight",
+            "example": 2200.0
+          },
+          "speciesImage": {
+            "type": "string",
+            "title": "Speciesimage",
+            "default": "",
+            "example": "https://upload.wikimedia.org/wikipedia/commons/..."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "species",
+          "gender",
+          "length",
+          "weight"
+        ],
+        "title": "SharkUpdate"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBasic": {
+        "type": "http",
+        "scheme": "basic"
+      }
+    }
+  }
+}

@@ -236,24 +236,6 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -270,36 +252,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Spis treści">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Spis treści
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#src.backend.app.main.app" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        src.backend.app.main.app
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -352,25 +304,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Spis treści
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#src.backend.app.main.app" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        src.backend.app.main.app
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -387,19 +320,25 @@
 
 
 <h1 id="specyfikacja-api">Specyfikacja API</h1>
+<p>Poniżej znajduje się interaktywna specyfikacja endpointów REST API wygenerowana automatycznie z kodu źródłowego aplikacji.</p>
+<p><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css"></p>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
 
+<div id="swagger-ui"></div>
 
-<div class="doc doc-object doc-attribute">
-
-
-
-
-<a id="src.backend.app.main.app"></a>
-    <div class="doc doc-contents first">
-
-    </div>
-
-</div>
+<script>
+  window.onload = () => {
+    window.ui = SwaggerUIBundle({
+      url: '../openapi.json',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIBundle.currentPreset
+      ]
+    });
+  };
+</script>
 
 
 
