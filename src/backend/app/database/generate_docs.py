@@ -1,3 +1,4 @@
+# English comments only
 import json
 import os
 import sys
@@ -39,37 +40,35 @@ def generate_openapi_schema():
 
 def main():
     """Generates all dynamic documentation files for the project."""
-    os.makedirs("docs", exist_ok=True)
+    os.makedirs(DOCS_DIR, exist_ok=True)
 
     # 1. Generate Database Documentation
     diagram = generate_meta_diagram()
     constraints = generate_meta_constraints()
 
-    # Formatted with proper markdown code blocks for Mermaid and table headers for constraints
     content = f"""# Database Architecture & Schema
 
 ## Current Graph Schema
 
-```mermaid
 {diagram}
-```
 
 ---
 
 ## Active Constraints and Indexes
 
-| Name | Type | Entity | Properties | State |
-| :--- | :--- | :--- | :--- | :--- |
 {constraints}
 """
 
-    with open("docs/database.md", "w", encoding="utf-8") as f:
+    database_md_path = os.path.join(DOCS_DIR, "database.md")
+    with open(database_md_path, "w", encoding="utf-8") as f:
         f.write(content)
 
-    print("Successfully generated docs/database.md")
+    print(f"Successfully generated {database_md_path}")
 
     # 2. Generate OpenAPI Schema for REST API Specification
     generate_openapi_schema()
 
-    if __name__ == "__main__":
-        main()
+
+# Fixed indentation: this block must be at the root level of the file
+if __name__ == "__main__":
+    main()
