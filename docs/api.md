@@ -9,8 +9,13 @@ Poniżej znajduje się interaktywna specyfikacja endpointów REST API wygenerowa
 
 <script>
   window.onload = () => {
+    // Dynamically construct the absolute URL path to openapi.json
+    const currentPath = window.location.pathname;
+    const basePath = currentPath.substring(0, currentPath.lastIndexOf('/api'));
+    const openapiUrl = window.location.origin + basePath + '/openapi.json';
+
     window.ui = SwaggerUIBundle({
-      url: 'openapi.json',
+      url: openapiUrl,
       dom_id: '#swagger-ui',
       deepLinking: true,
       presets: [
