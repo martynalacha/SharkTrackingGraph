@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -6,16 +8,18 @@ from src.backend.app.main import app
 
 
 @pytest.fixture(scope="session")
-def anyio_backend():
+def event_loop():
     """
-    Defines the backend driver for asynchronous operation execution.
-    Using anyio allows standard async/await syntax resolution in tests.
+    Creates an instance of the default asyncio event loop for the whole test session.
+    Provides isolation and fixes closed event loop runtime errors.
     """
-    return "asyncio"
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
-@pytest.fixture
-async def async_client(anyio_backend):
+@pytest.fixture(scope="session")
+async def async_client():
     """
     Provides a contextual isolated asynchronous client for FastAPI integration testing.
     """

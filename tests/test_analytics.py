@@ -22,8 +22,8 @@ async def test_hub_identification(async_client: AsyncClient):
 
     # Patch the driver object directly inside the analytics route package destination
     with patch("backend.app.routes.analytics.driver.session", return_value=mock_session):
-        # Execute GET request to the real defined endpoint
-        response = await async_client.get("/api/telemetry/date-range")
+        # Combined route prefix '/api/admin' + endpoint path '/api/telemetry/date-range'
+        response = await async_client.get("/api/admin/api/telemetry/date-range")
 
     # Assert response validation parameters
     assert response.status_code == 200
