@@ -26,5 +26,5 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pip install pytest pytest-asyncio httpx pandas fastapi neo4j
+        pip install pytest pytest-asyncio httpx pandas fastapi neo4j python-multipart
         pytest
