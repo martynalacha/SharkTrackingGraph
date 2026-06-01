@@ -17,8 +17,8 @@ async def test_get_shark_trajectory(async_client: AsyncClient):
         {"grid": "ZONE_25_-81", "time": "2026-05-19T10:30:00"},
     ]
 
-    # Patch the function executing the Cypher query
-    with patch("app.routers.sharks.get_shark_trajectory_from_db") as mock_db_call:
+    # Target the queries module object imported inside the sharks route
+    with patch("backend.app.routes.sharks.queries.get_shark_trajectory_from_db") as mock_db_call:
         mock_db_call.return_value = mock_db_response
 
         # Execute GET request
@@ -40,7 +40,8 @@ async def test_get_shark_not_found(async_client: AsyncClient):
     """
     shark_id = "UNKNOWN-999"
 
-    with patch("app.routers.sharks.get_shark_trajectory_from_db") as mock_db_call:
+    # Target the queries module object imported inside the sharks route
+    with patch("backend.app.routes.sharks.queries.get_shark_trajectory_from_db") as mock_db_call:
         # Return empty list simulating no records found
         mock_db_call.return_value = []
 

@@ -16,7 +16,8 @@ async def test_hub_identification(async_client: AsyncClient):
         {"grid_id": "ZONE_15_-60", "unique_sharks_count": 12},
     ]
 
-    with patch("app.routers.analytics.calculate_degree_centrality") as mock_calc:
+    # Fixed the patch path to match the real application module structure
+    with patch("backend.app.routes.analytics.calculate_degree_centrality") as mock_calc:
         mock_calc.return_value = mock_hub_data
 
         # Execute GET request
