@@ -11,3 +11,11 @@ ignore = []
 [tool.ruff.lint.isort]
 # Global layout configuration for import sorting
 known-first-party = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src", "src/backend"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning"
+]

@@ -16,7 +16,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.13'
+        python-version: '3.12'
 
     - name: Install pre-commit
       run: pip install pre-commit
@@ -26,5 +26,5 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pip install pytest pytest-asyncio httpx
+        pip install pytest pytest-asyncio httpx pandas fastapi neo4j python-multipart
         pytest
