@@ -50,11 +50,15 @@ jobs:
       run: |
         python -c "from src.backend.app.database.constraints import setup_database_constraints; setup_database_constraints()"
 
-    - name: Seed database data
+    - name: Seed mock database data
       env:
         PYTHONPATH: ".:src"
       run: |
-        python -c "from src.backend.app.database.seeding import seed_database; seed_database('src/backend/app/database/clean_data.py')"
+        python -c "
+        from src.backend.app.database.connection import driver
+        with driver.session() as session:
+            session.run('CREATE (:Shark)-[:MIGRATED_TO]->(:OceanGrid)')
+        "
 
     - name: Generate dynamic documentation files
       env:

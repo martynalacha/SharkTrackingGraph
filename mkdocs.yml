@@ -12,7 +12,12 @@ nav:
 
 plugins:
   - search
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: ["."]
+
+markdown_extensions:
+  - tables
+  - fenced_code
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: "!!python/name:pymdownx.superfences.mermaid_format"
