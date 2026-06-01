@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SharkTrack — Ocean Intelligence</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦈</text></svg>">
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">
+    <span class="nav-icon">◈</span>
+    <span class="nav-brand">SHARK<span class="accent">TRACK</span></span>
+  </div>
+  <div class="nav-tabs" id="nav-tabs">
+    <button class="nav-tab active" data-view="map">MAP</button>
+    <button class="nav-tab" data-view="sharks">SHARKS</button>
+    <button class="nav-tab" data-view="analytics">ANALYTICS</button>
+    <button class="nav-tab admin-tab" data-view="admin">ADMIN</button>
+  </div>
+  <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">☰</button>
+</nav>
+
+<!-- MOBILE NAV DRAWER -->
+<div class="mobile-nav-overlay hidden" id="mobile-nav-overlay"></div>
+<div class="mobile-nav hidden" id="mobile-nav">
+  <button class="nav-tab" data-view="map">MAP VIEW</button>
+  <button class="nav-tab" data-view="sharks">SHARKS</button>
+  <button class="nav-tab" data-view="analytics">ANALYTICS</button>
+  <button class="nav-tab admin-tab" data-view="admin">ADMIN</button>
+</div>
+
+<!-- VIEWS -->
+<main class="main">
+
+  <!-- ═══ MAP VIEW ═══ -->
+  <section class="view active" id="view-map">
+    <div class="map-layout">
+
+      <!-- MAP -->
+      <div class="map-container">
+        <div id="map"></div>
+
+        <!-- Map controls -->
+        <div class="map-overlay-controls">
+          <button class="map-ctrl active" id="ctrl-zones">⬡ ZONES</button>
+          <button class="map-ctrl" id="ctrl-clusters">◉ CLUSTERS</button>
+        </div>
+
+
+
+        <!-- Zone trajectory filter panel (on map) -->
+        <div class="map-panels-container" style="position: absolute; top: 52px; left: 10px; z-index: 1000; display: flex; gap: 10px; pointer-events: none;">
+
+          <div class="zone-filter-panel hidden" id="zone-filter-panel" style="pointer-events: auto; position: relative; top: auto; left: auto;">
+            <div class="zfp-header">
+              <span>ZONE FOCUS</span>
+              <button class="zfp-close" id="zfp-close">✕</button>
+            </div>
+            <div class="zfp-body">
+              <select class="filter-select" id="zfp-zone">
+                <option value="">All Zones</option>
+              </select>
+              <label class="zfp-label">FROM
+                <input type="datetime-local" class="filter-input" id="zfp-start" value="2000-01-01T00:00" />
+              </label>
+              <label class="zfp-label">TO
+                <input type="datetime-local" class="filter-input" id="zfp-end" value="2030-12-31T23:59" />
+              </label>
+            </div>
+          </div>
+
+          <div class="zone-filter-panel hidden" id="cluster-filter-panel" style="pointer-events: auto; position: relative; top: auto; left: auto;">
+            <div class="zfp-header">
+              <span>CLUSTER FOCUS</span>
+              <button class="zfp-close" id="cfp-close">✕</button>
+            </div>
+            <div class="zfp-body">
+              <label class="zfp-label">FROM
+                <input type="datetime-local" class="filter-input" id="cfp-start" value="2000-01-01T00:00" />
+              </label>
+              <label class="zfp-label">TO
+                <input type="datetime-local" class="filter-input" id="cfp-end" value="2030-12-31T23:59" />
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="map-status" id="map-status">Loading ocean data…</div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <h2>ACTIVE SHARKS</h2>
+          <div class="shark-count" id="shark-count">—</div>
+        </div>
+        <div class="filter-bar">
+          <input class="filter-input" id="filter-search" placeholder="Search by name or ID…" />
+          <select class="filter-select" id="filter-species">
+            <option value="">All species</option>
+          </select>
+        </div>
+        <div class="shark-list" id="shark-list">
+          <div class="loading-msg">Loading sharks…</div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- SHARK DETAIL DRAWER -->
+    <div class="drawer" id="shark-drawer">
+      <button class="drawer-close" id="drawer-close">✕</button>
+      <div class="drawer-content" id="drawer-content"></div>
+    </div>
+
+    <!-- ZONE DETAIL PANEL -->
+    <div class="zone-panel" id="zone-panel">
+      <button class="zone-panel-close" id="zone-panel-close">✕</button>
+      <div class="zone-panel-content" id="zone-panel-content"></div>
+    </div>
+  </section>
+
+  <!-- ═══ SHARKS VIEW ═══ -->
+  <section class="view" id="view-sharks">
+    <div class="page-header">
+      <h1>SHARK DATABASE</h1>
+      <div class="header-controls">
+        <input class="filter-input" id="table-search" placeholder="Search…" />
+        <select class="filter-select" id="table-species">
+          <option value="">All species</option>
+        </select>
+      </div>
+    </div>
+    <!-- virtual scroll container -->
+    <div class="sharks-scroll-area" id="sharks-scroll-area">
+      <div class="shark-grid" id="shark-grid"></div>
+      <div class="load-more-sentinel" id="load-sentinel"></div>
+    </div>
+  </section>
+
+  <!-- ═══ ANALYTICS ═══ -->
+  <section class="view" id="view-analytics">
+    <div class="page-header">
+      <h1>ZONE ANALYTICS</h1>
+    </div>
+    <div class="analytics-layout">
+      <div class="analytics-filters">
+        <label>FROM <input type="datetime-local" id="ana-start" class="filter-input" value="2000-01-01T00:00" /></label>
+        <label>TO <input type="datetime-local" id="ana-end" class="filter-input" value="2030-12-31T23:59" /></label>
+        <label>TOP <input type="number" id="ana-limit" class="filter-input" value="10" min="1" max="50" style="width:64px" /></label>
+        <button class="btn-primary" id="ana-run">RUN ANALYSIS</button>
+      </div>
+      <div class="analytics-grid" id="analytics-grid">
+        <div class="loading-msg">Run analysis to see results.</div>
+      </div>
+      <div class="centrality-section">
+        <h2>DEGREE CENTRALITY</h2>
+        <div class="centrality-grid" id="centrality-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ ADMIN ═══ -->
+  <section class="view" id="view-admin">
+    <div class="admin-auth-wall" id="admin-auth-wall">
+      <div class="auth-box">
+        <div class="auth-icon">🔐</div>
+        <h2>ADMIN ACCESS</h2>
+        <input class="filter-input" id="auth-user" placeholder="Username" autocomplete="username" />
+        <input class="filter-input" type="password" id="auth-pass" placeholder="Password" autocomplete="current-password" />
+        <button class="btn-primary" id="auth-login">AUTHENTICATE</button>
+        <div class="auth-error" id="auth-error"></div>
+      </div>
+    </div>
+
+    <div class="admin-panel hidden" id="admin-panel">
+      <div class="admin-tabs">
+        <button class="admin-subtab active" data-panel="sharks-mgmt">SHARKS</button>
+        <button class="admin-subtab" data-panel="zones-mgmt">ZONES</button>
+        <button class="admin-subtab" data-panel="telemetry-mgmt">TELEMETRY</button>
+      </div>
+
+      <div class="admin-subpanel active" id="sharks-mgmt">
+        <div class="admin-section">
+          <h3>ADD SHARK</h3>
+          <div class="admin-form">
+            <input class="filter-input" id="sc-id" placeholder="Shark ID *" />
+            <input class="filter-input" id="sc-name" placeholder="Name *" />
+            <input class="filter-input" id="sc-species" placeholder="Species *" />
+            <select class="filter-select" id="sc-gender">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+            <input class="filter-input" id="sc-length" type="number" step="0.1" placeholder="Length (m) *" />
+            <input class="filter-input" id="sc-weight" type="number" step="0.1" placeholder="Weight (kg) *" />
+            <button class="btn-primary" id="sc-submit">CREATE SHARK</button>
+            <div class="form-msg" id="sc-msg"></div>
+          </div>
+        </div>
+        <div class="admin-section">
+          <h3>EDIT / DELETE SHARK</h3>
+          <div class="admin-form">
+            <input class="filter-input" id="se-id" placeholder="Shark ID to edit/delete" />
+            <button class="btn-outline" id="se-load">LOAD</button>
+          </div>
+          <div class="admin-form hidden" id="shark-edit-form">
+            <input class="filter-input" id="se-name" placeholder="Name" />
+            <input class="filter-input" id="se-species" placeholder="Species" />
+            <select class="filter-select" id="se-gender">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+            <input class="filter-input" id="se-length" type="number" step="0.1" placeholder="Length (m)" />
+            <input class="filter-input" id="se-weight" type="number" step="0.1" placeholder="Weight (kg)" />
+            <div class="btn-row">
+              <button class="btn-primary" id="se-save">SAVE</button>
+              <button class="btn-danger" id="se-delete">DELETE</button>
+            </div>
+            <div class="form-msg" id="se-msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-subpanel" id="zones-mgmt">
+        <div class="admin-section">
+          <h3>ADD ZONE</h3>
+          <div class="admin-form">
+            <input class="filter-input" id="zc-id" placeholder="Grid ID *" />
+            <input class="filter-input" id="zc-lat" type="number" step="0.0001" placeholder="Center Latitude *" />
+            <input class="filter-input" id="zc-lon" type="number" step="0.0001" placeholder="Center Longitude *" />
+            <button class="btn-primary" id="zc-submit">CREATE ZONE</button>
+            <div class="form-msg" id="zc-msg"></div>
+          </div>
+        </div>
+        <div class="admin-section">
+          <h3>EDIT / DELETE ZONE</h3>
+          <div class="admin-form">
+            <input class="filter-input" id="ze-id" placeholder="Grid ID to edit/delete" />
+            <button class="btn-outline" id="ze-load">LOAD</button>
+          </div>
+          <div class="admin-form hidden" id="zone-edit-form">
+            <input class="filter-input" id="ze-lat" type="number" step="0.0001" placeholder="Center Latitude" />
+            <input class="filter-input" id="ze-lon" type="number" step="0.0001" placeholder="Center Longitude" />
+            <div class="btn-row">
+              <button class="btn-primary" id="ze-save">SAVE</button>
+              <button class="btn-danger" id="ze-delete">DELETE</button>
+            </div>
+            <div class="form-msg" id="ze-msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-subpanel" id="telemetry-mgmt">
+        <div class="admin-section">
+          <h3>IMPORT TELEMETRY CSV</h3>
+          <p class="helper-text">Required columns: <code>sharkId, datetime, lat, lon</code></p>
+          <div class="admin-form">
+            <div class="file-drop" id="csv-drop">
+              <span>DROP CSV FILE HERE or <label for="csv-input" class="file-label">BROWSE</label></span>
+              <input type="file" id="csv-input" accept=".csv" hidden />
+            </div>
+            <div class="form-msg" id="csv-msg"></div>
+          </div>
+        </div>
+        <div class="admin-section">
+          <h3>RECALIBRATE SPATIAL MAPPING</h3>
+          <p class="helper-text">Re-maps all telemetry to current grid after zone changes.</p>
+          <button class="btn-primary" id="recalibrate-btn">RUN RECALIBRATION</button>
+          <div class="form-msg" id="recal-msg"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

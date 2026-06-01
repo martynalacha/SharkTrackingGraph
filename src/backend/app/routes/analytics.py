@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
+from src.backend.app.database.connection import driver
 from src.backend.app.database.seeding import remap_telemetry_relations
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Operations"])
@@ -27,3 +28,16 @@ async def trigger_recalibration(background_tasks: BackgroundTasks):
     background_tasks.add_task(remap_telemetry_relations, df)
 
     return {"status": "processing", "message": "Spatial relationship recalibration started in background."}
+
+
+@router.get("/api/telemetry/date-range")
+def get_telemetry_date_range():
+    """Returns the global min and max timestamp across all PINGED_AT relations."""
+    query = """
+    MATCH ()-[r:PINGED_AT]->()
+    RETURN min(r.timestamp) AS minDate, max(r.timestamp) AS maxDate
+    """
+    with driver.session() as session:
+        result = session.run(query)
+        record = result.single()
+        return {"minDate": record["minDate"], "maxDate": record["maxDate"]}

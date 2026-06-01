@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from src.backend.app.database.connection import close_driver
 from src.backend.app.database.constraints import setup_database_constraints
 from src.backend.app.database.seeding import seed_database
-from src.backend.app.routes import admin_zones, analytics, grid, sharks, zones
+from src.backend.app.routes import admin_zones, analytics, clusters, grid, sharks, zones
 
 app = FastAPI(title="SharkTrackingGraph API")
 
@@ -19,6 +19,7 @@ app.include_router(zones.router)
 app.include_router(analytics.router)
 app.include_router(admin_sharks.router)
 app.include_router(admin_zones.router)
+app.include_router(clusters.router)
 
 
 @app.on_event("startup")
@@ -60,7 +61,8 @@ def health_check():
 
 # Serwowanie frontendu
 frontend_dir = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
-app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+
+app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")
 
 
 @app.get("/")
