@@ -10,7 +10,7 @@ Poniżej znajduje się interaktywna specyfikacja endpointów REST API wygenerowa
 <script>
   window.onload = () => {
     window.ui = SwaggerUIBundle({
-      url: '/SharkTrackingGraph/openapi.json',
+      url: '../openapi.json',
       dom_id: '#swagger-ui',
       deepLinking: true,
       presets: [
