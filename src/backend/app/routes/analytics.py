@@ -1,33 +1,43 @@
-from unittest.mock import MagicMock, patch
+import os
 
-import pytest
-from httpx import AsyncClient
+import pandas as pd
+from fastapi import APIRouter, BackgroundTasks, HTTPException
+
+from src.backend.app.database.connection import driver
+from src.backend.app.database.seeding import remap_telemetry_relations
+
+router = APIRouter(prefix="/api/admin", tags=["Admin Operations"])
 
 
-@pytest.mark.asyncio
-async def test_hub_identification(async_client: AsyncClient):
+@router.post("/recalibrate")
+async def trigger_recalibration(background_tasks: BackgroundTasks):
     """
-    Test the endpoint returning telemetry date range by mocking the Neo4j driver session.
+    Admin-only endpoint to trigger dynamic spatial re-mapping
+    whenever the OceanGrid architecture is modified.
     """
-    # Prepared mock records matching the exact expected keys returned by the query
-    mock_record = {"minDate": "2026-01-01T00:00:00", "maxDate": "2026-06-01T00:00:00"}
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    clean_csv_path = os.path.join(base_dir, "data", "sharks_data_clean.csv")
 
-    # Mocking the context manager execution chain for driver.session().run().single()
-    mock_session = MagicMock()
-    mock_result = MagicMock()
+    if not os.path.exists(clean_csv_path):
+        raise HTTPException(status_code=404, detail="Cleaned source telemetry file missing. Cannot recalibrate.")
 
-    mock_result.single.return_value = mock_record
-    mock_session.run.return_value = mock_result
-    mock_session.__enter__.return_value = mock_session
+    # Read the historical data from file to match against new database state
+    df = pd.read_csv(clean_csv_path)
 
-    # Patch the driver object directly inside the analytics route package destination
-    with patch("backend.app.routes.analytics.driver.session", return_value=mock_session):
-        # Execute GET request to the real defined endpoint
-        response = await async_client.get("/api/telemetry/date-range")
+    # Execute the heavy query in a background task to prevent blocking the REST API response
+    background_tasks.add_task(remap_telemetry_relations, df)
 
-    # Assert response validation parameters
-    assert response.status_code == 200
+    return {"status": "processing", "message": "Spatial relationship recalibration started in background."}
 
-    data = response.json()
-    assert data["minDate"] == "2026-01-01T00:00:00"
-    assert data["maxDate"] == "2026-06-01T00:00:00"
+
+@router.get("/api/telemetry/date-range")
+def get_telemetry_date_range():
+    """Returns the global min and max timestamp across all PINGED_AT relations."""
+    query = """
+    MATCH ()-[r:PINGED_AT]->()
+    RETURN min(r.timestamp) AS minDate, max(r.timestamp) AS maxDate
+    """
+    with driver.session() as session:
+        result = session.run(query)
+        record = result.single()
+        return {"minDate": record["minDate"], "maxDate": record["maxDate"]}

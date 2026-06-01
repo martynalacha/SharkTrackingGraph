@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -7,30 +7,27 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_hub_identification(async_client: AsyncClient):
     """
-    Test the endpoint returning aggregated data for ocean hubs (Degree Centrality).
+    Test the endpoint returning telemetry date range by mocking the Neo4j driver session.
     """
-    # Mock data representing analytical Cypher query response
-    mock_hub_data = [
-        {"grid_id": "ZONE_20_-70", "unique_sharks_count": 45},
-        {"grid_id": "ZONE_25_-80", "unique_sharks_count": 32},
-        {"grid_id": "ZONE_15_-60", "unique_sharks_count": 12},
-    ]
+    # Prepared mock records matching the exact expected keys returned by the query
+    mock_record = {"minDate": "2026-01-01T00:00:00", "maxDate": "2026-06-01T00:00:00"}
 
-    # Target the queries module object imported inside the analytics route
-    with patch("backend.app.routes.analytics.queries.calculate_degree_centrality") as mock_calc:
-        mock_calc.return_value = mock_hub_data
+    # Mocking the context manager execution chain for driver.session().run().single()
+    mock_session = MagicMock()
+    mock_result = MagicMock()
 
-        # Execute GET request
-        response = await async_client.get("/api/analytics/hubs")
+    mock_result.single.return_value = mock_record
+    mock_session.run.return_value = mock_result
+    mock_session.__enter__.return_value = mock_session
 
-    # Assert response structure
+    # Patch the driver object directly inside the analytics route package destination
+    with patch("backend.app.routes.analytics.driver.session", return_value=mock_session):
+        # Execute GET request to the real defined endpoint
+        response = await async_client.get("/api/telemetry/date-range")
+
+    # Assert response validation parameters
     assert response.status_code == 200
 
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 3
-
-    # Assert correct sorting and data mapping
-    assert data[0]["grid_id"] == "ZONE_20_-70"
-    assert data[0]["unique_sharks_count"] == 45
-    assert data[2]["unique_sharks_count"] == 12
+    assert data["minDate"] == "2026-01-01T00:00:00"
+    assert data["maxDate"] == "2026-06-01T00:00:00"

@@ -1,73 +1,153 @@
-from unittest.mock import MagicMock, patch
+from fastapi import APIRouter, HTTPException, Query
 
-import pytest
-from httpx import AsyncClient
+from src.backend.app.database.connection import driver
+from src.backend.app.schemas.shark import SharkCreate, SharkResponse, SharkUpdate
+
+router = APIRouter(prefix="/api/sharks", tags=["Sharks"])
 
 
-@pytest.mark.asyncio
-async def test_get_shark_trajectory(async_client: AsyncClient):
+@router.get("/")
+def get_sharks(species: str = Query(None, description="Filter sharks by exact species name")):
     """
-    Test the endpoint returning a shark's trajectory based on its ID by mocking Neo4j driver session.
+    Returns a list of all sharks in the database.
+    If a species query parameter is provided, filters the result by that species.
     """
-    shark_id = "SHARK-001"
+    if species:
+        query = """
+        MATCH (s:Shark)
+        WHERE toLower(s.species) = toLower($species)
+        RETURN s {.*} AS shark_data
+        ORDER BY s.name ASC
+        """
+        params = {"species": species}
+    else:
+        query = """
+        MATCH (s:Shark)
+        RETURN s {.*} AS shark_data
+        ORDER BY s.name ASC
+        """
+        params = {}
 
-    # Prepared mock raw data matching the exact database row record structure
-    mock_db_response = [
-        {
-            "name": "Deep Blue",
-            "species": "White Shark",
-            "image": "https://example.com/image.jpg",
-            "timestamp": "2026-05-18T08:00:00",
-            "lat": 25.0,
-            "lon": -80.0,
-            "zone": "ZONE_25_-80",
-        },
-        {
-            "name": "Deep Blue",
-            "species": "White Shark",
-            "image": "https://example.com/image.jpg",
-            "timestamp": "2026-05-19T10:30:00",
-            "lat": 25.5,
-            "lon": -81.0,
-            "zone": "ZONE_25_-81",
-        },
-    ]
-
-    # Mocking the context manager execution chain for driver.session().run()
-    mock_session = MagicMock()
-    mock_session.run.return_value = mock_db_response
-    mock_session.__enter__.return_value = mock_session
-
-    # Patch the driver object directly inside the sharks route package destination
-    with patch("backend.app.routes.sharks.driver.session", return_value=mock_session):
-        # Execute GET request
-        response = await async_client.get(f"/api/sharks/{shark_id}/trajectory")
-
-    # Assert response validation parameters
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["sharkId"] == shark_id
-    assert data["name"] == "Deep Blue"
-    assert len(data["trajectory"]) == 2
-    assert data["trajectory"][0]["zone"] == "ZONE_25_-80"
+    with driver.session() as session:
+        result = session.run(query, **params)
+        return [record["shark_data"] for record in result]
 
 
-@pytest.mark.asyncio
-async def test_get_shark_not_found(async_client: AsyncClient):
+@router.get("/search")
+def search_shark(q: str = Query(..., description="Search term matching sharkId or shark name")):
     """
-    Test the behavior when a requested shark ID does not exist in the database (empty results).
+    Finds a specific shark's full profile by performing a case-insensitive search
+    on both its name and sharkId.
     """
-    shark_id = "UNKNOWN-999"
+    query = """
+    MATCH (s:Shark)
+    WHERE s.sharkId = $q OR toLower(s.name) = toLower($q)
+    RETURN s {.*} AS shark_data
+    """
+    with driver.session() as session:
+        result = session.run(query, q=q)
+        record = result.single()
+        if not record:
+            raise HTTPException(status_code=404, detail=f"Shark with identifier '{q}' not found")
+        return record["shark_data"]
 
-    # Mocking empty database response result list
-    mock_session = MagicMock()
-    mock_session.run.return_value = []
-    mock_session.__enter__.return_value = mock_session
 
-    # Patch the driver object directly inside the sharks route package destination
-    with patch("backend.app.routes.sharks.driver.session", return_value=mock_session):
-        response = await async_client.get(f"/api/sharks/{shark_id}/trajectory")
+@router.get("/{shark_id}/trajectory")
+def get_shark_trajectory(shark_id: str):
+    """
+    Returns the chronological history of geographic points pinged by a specific shark,
+    including zone coordinates and entity metadata for map visualization.
+    """
+    # Uwaga: poprawiłem właściwości r.timestamp, r.lat, r.lon oraz g.gridId
+    # tak, aby odpowiadały dokładnie nazwom kluczy, które zapisały się w bazie w poprzednich krokach
+    query = """
+    MATCH (s:Shark {sharkId: $shark_id})-[r:PINGED_AT]->(g:OceanGrid)
+    RETURN s.name AS name, s.species AS species, s.speciesImage AS image,
+           r.timestamp AS timestamp, r.lat AS lat, r.lon AS lon, g.gridId AS zone
+    ORDER BY r.timestamp ASC
+    """
+    with driver.session() as session:
+        result = session.run(query, shark_id=shark_id)
+        records = list(result)
 
-    # Assert correct HTTP status code for unmapped tracking entities
-    assert response.status_code == 404
+        if not records:
+            raise HTTPException(status_code=404, detail="Shark tracking data not found")
+
+        trajectory = []
+        for rec in records:
+            trajectory.append(
+                {"timestamp": rec["timestamp"], "lat": rec["lat"], "lon": rec["lon"], "zone": rec["zone"]}
+            )
+
+        return {
+            "sharkId": shark_id,
+            "name": records[0]["name"],
+            "species": records[0]["species"],
+            "image": records[0]["image"],
+            "trajectory": trajectory,
+        }
+
+
+@router.post("/", status_code=201, response_model=SharkResponse)
+def create_shark(shark: SharkCreate):
+    """
+    Creates a new Shark node in the database.
+    """
+    query = """
+    CREATE (s:Shark {
+        sharkId: $sharkId,
+        name: $name,
+        species: $species,
+        gender: $gender,
+        length: toFloat($length),
+        weight: toFloat($weight),
+        speciesImage: $speciesImage
+    })
+    RETURN s {.*} AS shark_data
+    """
+    with driver.session() as session:
+        try:
+            result = session.run(query, **shark.dict())
+            return result.single()["shark_data"]
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.put("/{shark_id}", response_model=SharkResponse)
+def update_shark(shark_id: str, shark: SharkUpdate):
+    """
+    Updates the properties of an existing Shark node matching the sharkId.
+    """
+    query = """
+    MATCH (s:Shark {sharkId: $shark_id})
+    SET s.name = $name,
+        s.species = $species,
+        s.gender = $gender,
+        s.length = toFloat($length),
+        s.weight = toFloat($weight),
+        s.speciesImage = $speciesImage
+    RETURN s {.*} AS shark_data
+    """
+    with driver.session() as session:
+        result = session.run(query, shark_id=shark_id, **shark.dict())
+        record = result.single()
+        if not record:
+            raise HTTPException(status_code=404, detail=f"Shark '{shark_id}' not found")
+        return record["shark_data"]
+
+
+@router.delete("/{shark_id}")
+def delete_shark(shark_id: str):
+    """
+    Deletes a Shark node from the database along with all its connected relations.
+    """
+    query = """
+    MATCH (s:Shark {sharkId: $shark_id})
+    DETACH DELETE s
+    RETURN count(s) AS deleted_count
+    """
+    with driver.session() as session:
+        result = session.run(query, shark_id=shark_id)
+        if result.single()["deleted_count"] == 0:
+            raise HTTPException(status_code=404, detail=f"Shark '{shark_id}' not found")
+        return {"detail": f"Shark '{shark_id}' and all its relations successfully deleted."}
