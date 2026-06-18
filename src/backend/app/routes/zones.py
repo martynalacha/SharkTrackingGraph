@@ -6,7 +6,7 @@ router = APIRouter(prefix="/api/zones", tags=["Ocean Zones"])
 
 
 @router.get("/{grid_id}/bounds")
-def get_zone_time_bounds(grid_id: str):
+async def get_zone_time_bounds(grid_id: str):
     """
     Returns the absolute earliest and latest ping timestamps recorded within
     a specific ocean zone or globally for all zones combined.
@@ -29,9 +29,9 @@ def get_zone_time_bounds(grid_id: str):
                max(r.timestamp) AS absolute_end
         """
 
-    with driver.session() as session:
-        result = session.run(query, grid_id=grid_id)
-        record = result.single()
+    async with driver.session() as session:
+        result = await session.run(query, grid_id=grid_id)
+        record = await result.single()
 
         if not record or (grid_id != "ALL_ZONES" and record["gridId"] is None):
             raise HTTPException(status_code=404, detail="Zone or global bounds data not found.")
@@ -44,7 +44,7 @@ def get_zone_time_bounds(grid_id: str):
 
 
 @router.get("/{grid_id}")
-def get_zone_analysis(
+async def get_zone_analysis(
     grid_id: str,
     start_time: str = Query("2000-01-01 00:00:00", description="Start timestamp filter (YYYY-MM-DD HH:MM:SS)"),
     end_time: str = Query("2030-12-31 23:59:59", description="End timestamp filter (YYYY-MM-DD HH:MM:SS)"),
@@ -60,9 +60,9 @@ def get_zone_analysis(
     RETURN g.gridId AS gridId, g.centerLat AS centerLat, g.centerLon AS centerLon,
            collect(DISTINCT s { .sharkId, .name, .species, .speciesImage }) AS unique_sharks
     """
-    with driver.session() as session:
-        result = session.run(query, grid_id=grid_id, start_time=start_time, end_time=end_time)
-        record = result.single()
+    async with driver.session() as session:
+        result = await session.run(query, grid_id=grid_id, start_time=start_time, end_time=end_time)
+        record = await result.single()
 
         if not record or record["gridId"] is None:
             raise HTTPException(status_code=404, detail=f"Ocean zone sector '{grid_id}' not found in the database.")
@@ -78,7 +78,7 @@ def get_zone_analysis(
 
 
 # @router.get("/{grid_id}")
-# def get_zone_analysis(
+# async def get_zone_analysis(
 #     grid_id: str,
 #     start_time: str = Query("2000-01-01 00:00:00", description="Start timestamp filter (YYYY-MM-DD HH:MM:SS)"),
 #     end_time: str = Query("2030-12-31 23:59:59", description="End timestamp filter (YYYY-MM-DD HH:MM:SS)"),
@@ -103,8 +103,8 @@ def get_zone_analysis(
 #            absolute_start, absolute_end,
 #            collect(DISTINCT s { .sharkId, .name, .species, .speciesImage }) AS unique_sharks
 #     """
-#     with driver.session() as session:
-#         result = session.run(query, grid_id=grid_id, start_time=start_time, end_time=end_time)
+#     async with driver.session() as session:
+#         result = await session.run(query, grid_id=grid_id, start_time=start_time, end_time=end_time)
 #         record = result.single()
 
 #         if not record or record["gridId"] is None:
@@ -125,71 +125,73 @@ def get_zone_analysis(
 #         }
 
 
-# @router.get("/analysis/degree-centrality")
-# def get_zones_degree_centrality(limit: int = Query(10, description="Number of top ecological corridors to return")):
-#     """
-#     Executes a graph centrality analysis (Degree Centrality) to calculate
-#     the mathematical importance of each OceanGrid node based on incoming telemetry connections.
-#     """
-#     query = """
-#     MATCH (g:OceanGrid)
-#     OPTIONAL MATCH (s:Shark)-[r:PINGED_AT]->(g)
-#     WITH g, count(r) AS degreeScore
-#     RETURN g.gridId AS gridId, g.centerLat AS centerLat, g.centerLon AS centerLon, degreeScore
-#     ORDER BY degreeScore DESC
-#     LIMIT $limit
-#     """
-#     with driver.session() as session:
-#         result = session.run(query, limit=limit)
+@router.get("/analysis/degree-centrality")
+async def get_zones_degree_centrality(
+    limit: int = Query(10, description="Number of top ecological corridors to return"),
+):
+    """
+    Executes a graph centrality analysis (Degree Centrality) to calculate
+    the mathematical importance of each OceanGrid node based on incoming telemetry connections.
+    """
+    query = """
+    MATCH (g:OceanGrid)
+    OPTIONAL MATCH (s:Shark)-[r:PINGED_AT]->(g)
+    WITH g, count(r) AS degreeScore
+    RETURN g.gridId AS gridId, g.centerLat AS centerLat, g.centerLon AS centerLon, degreeScore
+    ORDER BY degreeScore DESC
+    LIMIT $limit
+    """
+    async with driver.session() as session:
+        result = await session.run(query, limit=limit)
 
-#         centrality_report = []
-#         for rec in result:
-#             centrality_report.append(
-#                 {
-#                     "gridId": rec["gridId"],
-#                     "centerLat": rec["centerLat"],
-#                     "centerLon": rec["centerLon"],
-#                     "centralityDegreeScore": rec["degreeScore"],
-#                 }
-#             )
+        centrality_report = []
+        for rec in result:
+            centrality_report.append(
+                {
+                    "gridId": rec["gridId"],
+                    "centerLat": rec["centerLat"],
+                    "centerLon": rec["centerLon"],
+                    "centralityDegreeScore": rec["degreeScore"],
+                }
+            )
 
-#         return {
-#             "algorithm": "Degree Centrality (In-Degree Spatial Traversal)",
-#             "targetLabels": ["Shark", "OceanGrid"],
-#             "relationshipType": "PINGED_AT",
-#             "results": centrality_report,
-#         }
+        return {
+            "algorithm": "Degree Centrality (In-Degree Spatial Traversal)",
+            "targetLabels": ["Shark", "OceanGrid"],
+            "relationshipType": "PINGED_AT",
+            "results": centrality_report,
+        }
 
 
-# @router.get("/{grid_id}/trajectories")
-# def get_zone_sharks_trajectories(
-#     grid_id: str,
-#     start_time: str = Query("2000-01-01 00:00:00", description="Start timestamp filter (YYYY-MM-DD HH:MM:SS)"),
-#     end_time: str = Query("2030-12-31 23:59:59", description="End timestamp filter (YYYY-MM-DD HH:MM:SS)"),
-# ):
-#     """
-#     Returns telemetry points for all sharks, but ONLY the PINGED_AT relationships
-#     that occurred strictly within this specific zone and time range.
-#     """
-#     # Zapytanie wyciąga punkty przypisane bezpośrednio do g (OceanGrid)
-#     query = """
-#     MATCH (g:OceanGrid {gridId: $grid_id})
-#     MATCH (s:Shark)-[r:PINGED_AT]->(g)
-#     WHERE r.timestamp >= $start_time AND r.timestamp <= $end_time
-#     RETURN s.sharkId AS sharkId, s.name AS name,
-#            collect({
-#                lat: r.lat,
-#                lon: r.lon,
-#                timestamp: r.timestamp
-#            }) AS points
-#     """
-#     with driver.session() as session:
-#         result = session.run(query, grid_id=grid_id, start_time=start_time, end_time=end_time)
+@router.get("/{grid_id}/trajectories")
+async def get_zone_sharks_trajectories(
+    grid_id: str,
+    start_time: str = Query("2000-01-01 00:00:00", description="Start timestamp filter (YYYY-MM-DD HH:MM:SS)"),
+    end_time: str = Query("2030-12-31 23:59:59", description="End timestamp filter (YYYY-MM-DD HH:MM:SS)"),
+):
+    """
+    Returns telemetry points for all sharks, but ONLY the PINGED_AT relationships
+    that occurred strictly within this specific zone and time range.
+    """
+    # Zapytanie wyciąga punkty przypisane bezpośrednio do g (OceanGrid)
+    query = """
+    MATCH (g:OceanGrid {gridId: $grid_id})
+    MATCH (s:Shark)-[r:PINGED_AT]->(g)
+    WHERE r.timestamp >= $start_time AND r.timestamp <= $end_time
+    RETURN s.sharkId AS sharkId, s.name AS name,
+           collect({
+               lat: r.lat,
+               lon: r.lon,
+               timestamp: r.timestamp
+           }) AS points
+    """
+    async with driver.session() as session:
+        result = await session.run(query, grid_id=grid_id, start_time=start_time, end_time=end_time)
+        records = await result.data()
+        output = []
+        for rec in records:
+            # Sortujemy zebrane punkty chronologicznie, aby linia na mapie miała właściwy kierunek
+            sorted_points = sorted(rec["points"], key=lambda x: x["timestamp"])
+            output.append({"sharkId": rec["sharkId"], "name": rec["name"], "trajectory": sorted_points})
 
-#         output = []
-#         for rec in result:
-#             # Sortujemy zebrane punkty chronologicznie, aby linia na mapie miała właściwy kierunek
-#             sorted_points = sorted(rec["points"], key=lambda x: x["timestamp"])
-#             output.append({"sharkId": rec["sharkId"], "name": rec["name"], "trajectory": sorted_points})
-
-#         return output
+        return output

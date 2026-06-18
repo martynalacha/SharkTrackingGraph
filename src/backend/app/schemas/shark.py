@@ -1,23 +1,35 @@
-from pydantic import BaseModel, Field
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SharkBase(BaseModel):
-    name: str = Field(..., example="Deep Blue")
-    species: str = Field(..., example="White Shark (Carcharodon carcharias)")
-    gender: str = Field(..., example="Female")
-    length: float = Field(..., example=6.1)
-    weight: float = Field(..., example=2200.0)
-    speciesImage: str = Field("", example="https://upload.wikimedia.org/wikipedia/commons/...")
+    name: str = Field(..., examples=["Deep Blue"])
+    species: str = Field(..., examples=["White Shark (Carcharodon carcharias)"])
+    gender: str = Field(..., examples=["Female"])
+    length: float = Field(..., gt=0, examples=[6.1])
+    weight: float = Field(..., gt=0, examples=[2200.0])
+    speciesImage: str = Field("", examples=["https://upload.wikimedia.org/wikipedia/commons/..."])
 
 
 class SharkCreate(SharkBase):
-    sharkId: str = Field(..., example="99999")
+    sharkId: str = Field(..., examples=["99999"])
 
 
 class SharkUpdate(SharkBase):
-    pass
+    name: Optional[str] = None
+    species: Optional[str] = None
+    gender: Optional[str] = None
+    length: Optional[float] = Field(None, gt=0)
+    weight: Optional[float] = Field(None, gt=0)
+    speciesImage: Optional[str] = None
+
+    # model_config = ConfigDict(from_attributes=True)
 
 
 class SharkResponse(SharkCreate):
-    class Config:
-        from_attributes = True
+    weight: Optional[float] = None
+    length: Optional[float] = None
+    speciesImage: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)

@@ -1,17 +1,17 @@
-from neo4j import GraphDatabase
+from neo4j import AsyncGraphDatabase
 
 from src.backend.app.config import settings
 
 # Initialize the official Neo4j driver connection pool.
-driver = GraphDatabase.driver(settings.NEO4J_URI, auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD))
+driver = AsyncGraphDatabase.driver(settings.NEO4J_URI, auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD))
 
 
-def get_db_session():
+async def get_db_session():
     """Context manager providing a secure database session."""
-    with driver.session() as session:
+    async with driver.session() as session:
         yield session
 
 
-def close_driver():
+async def close_driver():
     """Closes the database driver connection pool."""
-    driver.close()
+    await driver.close()

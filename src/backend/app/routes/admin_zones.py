@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.backend.app.database.connection import driver
 from src.backend.app.dependencies.auth import verify_admin_credentials
-from src.backend.app.schemas.grid import OceanGridCreate, OceanGridResponse
+from src.backend.app.schemas.common import DetailResponse
+from src.backend.app.schemas.grid import OceanGridCreate, OceanGridResponse, OceanGridUpdate
 
 router = APIRouter(
     prefix="/api/admin/zones", tags=["Admin Zone Management"], dependencies=[Depends(verify_admin_credentials)]
@@ -10,7 +11,7 @@ router = APIRouter(
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=OceanGridResponse)
-def create_ocean_zone(zone: OceanGridCreate):
+async def create_ocean_zone(zone: OceanGridCreate):
     """
     Defines a new ocean sector node (OceanGrid) in the database spatial system.
     """
@@ -22,28 +23,30 @@ def create_ocean_zone(zone: OceanGridCreate):
     })
     RETURN g {.*} AS zone_data
     """
-    with driver.session() as session:
+    async with driver.session() as session:
         try:
-            result = session.run(query, **zone.dict())
-            return result.single()["zone_data"]
+            result = await session.run(query, **zone.dict())
+            record = await result.single()
+            return record["zone_data"]
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.put("/{grid_id}", response_model=OceanGridResponse)
-def update_ocean_zone(grid_id: str, zone_data: OceanGridCreate):
+async def update_ocean_zone(grid_id: str, zone_data: OceanGridUpdate):
     """
-    Updates the coordinates or properties of an existing OceanGrid node.
+    Updates the coordinates of an existing OceanGrid node. Pola nieprzekazane
+    w body (None) zostają bez zmian — nie są zerowane.
     """
     query = """
     MATCH (g:OceanGrid {gridId: $grid_id})
-    SET g.centerLat = toFloat($centerLat),
-        g.centerLon = toFloat($centerLon)
+    SET g.centerLat = coalesce(toFloat($centerLat), g.centerLat),
+        g.centerLon = coalesce(toFloat($centerLon), g.centerLon)
     RETURN g {.*} AS zone_data
     """
-    with driver.session() as session:
-        result = session.run(query, grid_id=grid_id, centerLat=zone_data.centerLat, centerLon=zone_data.centerLon)
-        record = result.single()
+    async with driver.session() as session:
+        result = await session.run(query, grid_id=grid_id, centerLat=zone_data.centerLat, centerLon=zone_data.centerLon)
+        record = await result.single()
         if not record:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=f"OceanGrid node with ID '{grid_id}' not found."
@@ -51,8 +54,8 @@ def update_ocean_zone(grid_id: str, zone_data: OceanGridCreate):
         return record["zone_data"]
 
 
-@router.delete("/{grid_id}", status_code=status.HTTP_200_OK)
-def delete_ocean_zone(grid_id: str):
+@router.delete("/{grid_id}", status_code=status.HTTP_200_OK, response_model=DetailResponse)
+async def delete_ocean_zone(grid_id: str):
     """
     Performs a cascading DETACH DELETE to safely remove an OceanGrid node and its topology edges.
     """
@@ -61,9 +64,9 @@ def delete_ocean_zone(grid_id: str):
     DETACH DELETE g
     RETURN count(g) AS deleted_count
     """
-    with driver.session() as session:
-        result = session.run(query, grid_id=grid_id)
-        record = result.single()
+    async with driver.session() as session:
+        result = await session.run(query, grid_id=grid_id)
+        record = await result.single()
         if record["deleted_count"] == 0:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=f"OceanGrid node with ID '{grid_id}' not found."

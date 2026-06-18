@@ -22,4 +22,4 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # The --reload flag enables hot-reloading for development
-CMD ["uvicorn", "src.backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

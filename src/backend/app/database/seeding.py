@@ -8,7 +8,7 @@ from src.backend.app.services.wiki_service import WikiService
 
 logger = logging.getLogger("uvicorn.error")
 
-# Base baseline zones provided by you to initialize the database
+# Base baseline zones provided to initialize the database
 OCEARCH_ZONES: dict[str, tuple[float, float]] = {
     "30 nm off Jacksonville, Florida": (30.5, -81.3),
     "Algoa Bay, South Africa": (-33.8, 25.8),
@@ -91,32 +91,36 @@ OCEARCH_ZONES: dict[str, tuple[float, float]] = {
 }
 
 
-async def remap_telemetry_relations(df: pd.DataFrame):
-    """
-    Clears existing PINGED_AT relations and recalibrates them based on current OceanGrid nodes.
-    """
-    logger.info("Recalibrating spatial telemetry relations in Neo4j...")
+# Maximum distance in meters between ping and grid center to establish PINGED_AT relation.
+DEFAULT_MAX_GRID_DISTANCE_METERS = 555_000
 
-    # Clean up old relations to prevent duplication or outdated spatial bindings
-    clear_relations_query = "MATCH ()-[r:PINGED_AT]->() DELETE r"
 
+async def attach_pings_to_grid(
+    pings_payload: list[dict],
+    chunk_size: int = 1000,
+    max_distance_meters: float = DEFAULT_MAX_GRID_DISTANCE_METERS,
+) -> int:
+    """
+    Shared logic for associating telemetry pings with the nearest OceanGrid node.
+    Used by both re-calibration processes and manual admin CSV imports.
+    """
     insert_pings_query = """
     UNWIND $pings AS ping
     MATCH (s:Shark {sharkId: ping.sharkId})
     MATCH (g:OceanGrid)
 
-    // Calculate the distance on the Neo4j side using coordinates stored in the database
-    WITH s, ping, g, sqrt((ping.lat - g.centerLat)^2 + (ping.lon - g.centerLon)^2) AS distance
-    ORDER BY distance ASC
+    // Calculate geodesic distance in meters accounting for Earth's curvature.
+    WITH s, ping, g,
+         point({latitude: ping.lat, longitude: ping.lon}) AS pingPoint,
+         point({latitude: g.centerLat, longitude: g.centerLon}) AS gridPoint
+    WITH s, ping, g, point.distance(pingPoint, gridPoint) AS distanceMeters
+    ORDER BY distanceMeters ASC
 
-    // Select the absolute closest database zone node per ping log
-    WITH s, ping, collect({node: g, dist: distance})[0] AS closest
-
-    // Extract the actual node and distance into separate variables before FOREACH
+    WITH s, ping, collect({node: g, dist: distanceMeters})[0] AS closest
     WITH s, ping, closest.node AS targetNode, closest.dist AS targetDist
 
-    // Connect nodes directly if within 5 degrees threshold using the clean variable
-    FOREACH (i IN CASE WHEN targetDist <= 5.0 THEN [1] ELSE [] END |
+    // Create relation only if the ping is within the threshold distance.
+    FOREACH (i IN CASE WHEN targetDist <= $max_distance_meters THEN [1] ELSE [] END |
         CREATE (s)-[r:PINGED_AT {
             timestamp: ping.datetime,
             lat: ping.lat,
@@ -125,22 +129,40 @@ async def remap_telemetry_relations(df: pd.DataFrame):
     )
     """
 
-    pings_payload = []
-    for _, row in df.iterrows():
-        pings_payload.append(
-            {
-                "sharkId": str(row["id"]),
-                "datetime": str(row["datetime"]),
-                "lat": float(row["latitude"]),
-                "lon": float(row["longitude"]),
-            }
-        )
+    total_pings = len(pings_payload)
+    async with driver.session() as session:
+        for i in range(0, total_pings, chunk_size):
+            chunk = pings_payload[i : i + chunk_size]
+            await session.run(
+                insert_pings_query,
+                pings=chunk,
+                max_distance_meters=max_distance_meters,
+            )
+    return total_pings
 
-    with driver.session() as session:
-        session.run(clear_relations_query)
-        chunk_size = 5000
-        for i in range(0, len(pings_payload), chunk_size):
-            session.run(insert_pings_query, pings=pings_payload[i : i + chunk_size])
+
+async def remap_telemetry_relations(df: pd.DataFrame):
+    """
+    Clears existing PINGED_AT relations and recalibrates them based on current OceanGrid nodes.
+    """
+    logger.info("Recalibrating spatial telemetry relations in Neo4j...")
+
+    clear_relations_query = "MATCH ()-[r:PINGED_AT]->() DELETE r"
+
+    pings_payload = [
+        {
+            "sharkId": str(row["id"]),
+            "datetime": str(row["datetime"]),
+            "lat": float(row["latitude"]),
+            "lon": float(row["longitude"]),
+        }
+        for _, row in df.iterrows()
+    ]
+
+    async with driver.session() as session:
+        await session.run(clear_relations_query)
+
+    await attach_pings_to_grid(pings_payload, chunk_size=5000)
     logger.info("Telemetry relations updated successfully.")
 
 
@@ -151,6 +173,13 @@ async def seed_database(clean_csv_path: str):
     if not os.path.exists(clean_csv_path):
         return
 
+    async with driver.session() as session:
+        count = await session.run("MATCH (s:Shark) RETURN count(s) AS count")
+        record = await count.single()
+        if record and record["count"] > 0:
+            logger.info("Database already seeded. Skipping.")
+            return
+
     # Create default OceanGrid nodes in the database from your baseline dictionary
     insert_grids_query = """
     UNWIND $grids AS grid
@@ -159,9 +188,11 @@ async def seed_database(clean_csv_path: str):
     """
     grids_payload = [{"name": k, "lat": v[0], "lon": v[1]} for k, v in OCEARCH_ZONES.items()]
 
-    with driver.session() as session:
-        session.run(insert_grids_query, grids=grids_payload)
+    async with driver.session() as session:
+        await session.run(insert_grids_query, grids=grids_payload)
         logger.info("Loaded baseline OceanGrid nodes into Neo4j.")
+
+    species_image_cache: dict[str, str] = {}
 
     # Process and load unique Shark nodes
     df = pd.read_csv(clean_csv_path)
@@ -170,15 +201,17 @@ async def seed_database(clean_csv_path: str):
 
     for _, row in sharks_df.iterrows():
         species_name = str(row["species"])
-        image_url = await WikiService.get_species_image_url(species_name)
+        if species_name not in species_image_cache:
+            species_image_cache[species_name] = await WikiService.get_species_image_url(species_name)
+        image_url = species_image_cache[species_name]
         sharks_list.append(
             {
                 "sharkId": str(row["id"]),
                 "name": str(row["name"]),
                 "gender": str(row["gender"]),
                 "species": species_name,
-                "weight": str(row["weight"]),
-                "length": str(row["length"]),
+                "weight": float(row["weight"]) if pd.notna(row["weight"]) else None,
+                "length": float(row["length"]) if pd.notna(row["length"]) else None,
                 "speciesImage": image_url,
             }
         )
@@ -190,8 +223,8 @@ async def seed_database(clean_csv_path: str):
         s.weight = shark.weight, s.length = shark.length, s.speciesImage = shark.speciesImage
     """
 
-    with driver.session() as session:
-        session.run(insert_sharks_query, sharks=sharks_list)
+    async with driver.session() as session:
+        await session.run(insert_sharks_query, sharks=sharks_list)
         logger.info("Loaded unique Shark nodes into Neo4j.")
 
     # Generate or update graph connections

@@ -6,7 +6,7 @@ router = APIRouter(prefix="/api/zones/analysis/clusters", tags=["Zone Clusters"]
 
 
 @router.get("")
-def get_zone_clusters(
+async def get_zone_clusters(
     start_time: str = Query("2000-01-01 00:00:00", description="Start timestamp filter (YYYY-MM-DD HH:MM:SS)"),
     end_time: str = Query("2030-12-31 23:59:59", description="End timestamp filter (YYYY-MM-DD HH:MM:SS)"),
     limit: int = Query(10, description="Number of top hot-spots to return"),
@@ -24,11 +24,11 @@ def get_zone_clusters(
     ORDER BY totalPings DESC
     LIMIT $limit
     """
-    with driver.session() as session:
-        result = session.run(query, start_time=start_time, end_time=end_time, limit=limit)
-
+    async with driver.session() as session:
+        result = await session.run(query, start_time=start_time, end_time=end_time, limit=limit)
+        records = await result.data()
         clusters = []
-        for rec in result:
+        for rec in records:
             clusters.append(
                 {
                     "gridId": rec["gridId"],

@@ -6,7 +6,7 @@ router = APIRouter(prefix="/api/zones", tags=["Ocean Zones"])
 
 
 @router.get("/markers")
-def get_zone_markers():
+async def get_zone_markers():
     """
     Returns aggregate map marker data for all registered ocean grids,
     including unique shark counts and the latest registered activities.
@@ -17,10 +17,11 @@ def get_zone_markers():
     RETURN g.name AS zoneName, g.centerLat AS lat, g.centerLon AS lon,
            uniqueSharks, sampleSharks
     """
-    with driver.session() as session:
-        result = session.run(query)
+    async with driver.session() as session:
+        result = await session.run(query)
+        records = await result.data()
         markers = []
-        for rec in result:
+        for rec in records:
             markers.append(
                 {
                     "zoneName": rec["zoneName"],

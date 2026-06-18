@@ -1,6 +1,59 @@
 import os
+import re
 
 import pandas as pd
+
+
+def parse_weight(value):
+    """
+    Parses weight: removes commas, '+', and units.
+    Converts lb to kg. Returns None if value is missing.
+    """
+    if pd.isna(value):
+        return None
+
+    cleaned = str(value).strip().replace(",", "")
+    match = re.search(r"\d+\.?\d*", cleaned)
+    if not match:
+        return None
+
+    try:
+        val = float(match.group())
+        return round(val * 0.453592, 2) if "lb" in str(value).lower() else val
+    except ValueError:
+        return None
+
+
+def parse_length(value):
+    """
+    Parses formats like '5 ft 4 in.', '4 ft 11.5 in.', '1.5 m' to meters.
+    Handles extra spaces, dots, and punctuation.
+    """
+    if pd.isna(value):
+        return None
+
+    s = str(value).lower()
+    s = s.replace(",", " ").replace('"', "").replace("'", "")
+    s = re.sub(r"(?<!\d)\.|\.(?!\d)", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+
+    ft = re.search(r"(\d+(?:\.\d+)?)\s*ft", s)
+    inc = re.search(r"(\d+(?:\.\d+)?)\s*in", s)
+
+    total_inches = 0
+    if ft:
+        total_inches += float(ft.group(1)) * 12
+    if inc:
+        total_inches += float(inc.group(1))
+
+    if total_inches > 0:
+        return round(total_inches * 0.0254, 2)
+
+    m_match = re.search(r"(\d+(?:\.\d+)?)\s*m", s)
+    if m_match:
+        return float(m_match.group(1))
+
+    return None
 
 
 def clean_csv_data(input_file_path: str, output_file_path: str):
@@ -33,6 +86,10 @@ def clean_csv_data(input_file_path: str, output_file_path: str):
     if duplicate_count > 0:
         df.drop_duplicates(subset=["id", "datetime", "latitude", "longitude"], keep="first", inplace=True)
         print(f"Row count after removing duplicates: {len(df)}")
+
+    print("\n--Applying unit conversions and cleaning numeric data--")
+    df["weight"] = df["weight"].apply(parse_weight)
+    df["length"] = df["length"].apply(parse_length)
 
     print("\n--Data Analysis--")
     unique_sharks_count = df["id"].nunique()
