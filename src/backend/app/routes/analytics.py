@@ -11,6 +11,19 @@ from src.backend.app.schemas.common import RecalibrationResponse, TelemetryDateR
 router = APIRouter(prefix="/api/admin", tags=["Admin Operations"])
 
 
+@router.get(
+    "/verify",
+    dependencies=[Depends(verify_admin_credentials)],
+)
+async def verify_admin():
+    """
+    Lightweight credential-check endpoint for the admin login form.
+    The verify_admin_credentials dependency raises 401 on bad credentials,
+    so reaching this body at all means the supplied Basic Auth was valid.
+    """
+    return {"status": "ok"}
+
+
 @router.post(
     "/recalibrate",
     response_model=RecalibrationResponse,

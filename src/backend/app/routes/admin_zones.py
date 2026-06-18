@@ -5,9 +5,7 @@ from src.backend.app.dependencies.auth import verify_admin_credentials
 from src.backend.app.schemas.common import DetailResponse
 from src.backend.app.schemas.grid import OceanGridCreate, OceanGridResponse, OceanGridUpdate
 
-router = APIRouter(
-    prefix="/api/admin/zones", tags=["Admin Zone Management"], dependencies=[Depends(verify_admin_credentials)]
-)
+router = APIRouter(prefix="/api/admin/zones", tags=["Admin Zone Management"], dependencies=[Depends(verify_admin_credentials)])
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=OceanGridResponse)
@@ -48,9 +46,7 @@ async def update_ocean_zone(grid_id: str, zone_data: OceanGridUpdate):
         result = await session.run(query, grid_id=grid_id, centerLat=zone_data.centerLat, centerLon=zone_data.centerLon)
         record = await result.single()
         if not record:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"OceanGrid node with ID '{grid_id}' not found."
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"OceanGrid node with ID '{grid_id}' not found.")
         return record["zone_data"]
 
 
@@ -68,7 +64,5 @@ async def delete_ocean_zone(grid_id: str):
         result = await session.run(query, grid_id=grid_id)
         record = await result.single()
         if record["deleted_count"] == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"OceanGrid node with ID '{grid_id}' not found."
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"OceanGrid node with ID '{grid_id}' not found.")
         return {"detail": f"OceanGrid zone '{grid_id}' and all associated path edges successfully deleted."}

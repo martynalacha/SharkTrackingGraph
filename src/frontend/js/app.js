@@ -309,12 +309,8 @@ function refreshMapLayers() {
 
 async function loadClusterMarkers() {
   try {
-    // ZMIANA: Odczytujemy daty z nowego panelu CLUSTER FOCUS (cfp-start, cfp-end)
-    const startInput = document.getElementById('cfp-start')?.value;
-    const endInput   = document.getElementById('cfp-end')?.value;
-
-    const start = (startInput || '2000-01-01T00:00').replace('T', ' ') + ':00';
-    const end   = (endInput   || '2030-12-31T23:59').replace('T', ' ') + ':00';
+    const start = document.getElementById('cfp-start')?.value || '2000-01-01T00:00';
+    const end   = document.getElementById('cfp-end')?.value   || '2030-12-31T23:59';
 
     const data = await API.getClusters(start, end, 20);
     if (_clusterLayerGroup) State.map.removeLayer(_clusterLayerGroup);
@@ -357,7 +353,7 @@ function populateZoneFilterDropdown() {
 
 async function runZoneTrajectoryFilter() {
   const gridId = document.getElementById('zfp-zone').value;
-  const msg   = document.getElementById('zfp-msg');
+  const msg = document.getElementById('zfp-msg');
 
   if (!gridId) {
     if (msg) { msg.className = 'form-msg error'; msg.textContent = 'Select a zone first.'; }
@@ -365,18 +361,15 @@ async function runZoneTrajectoryFilter() {
   }
   if (msg) { msg.className = 'form-msg'; msg.textContent = 'Loading zone trajectories…'; }
 
-  // Czyszczenie starych linii trajektorii z mapy
   State.zoneTrajectoryLayers.forEach(l => State.map.removeLayer(l));
   State.zoneTrajectoryLayers = [];
 
-  // Pobieramy aktualne filtry dat z kalendarzy na mapie
   const startEl = document.getElementById('zfp-start');
   const endEl = document.getElementById('zfp-end');
-  const startParam = startEl?.value ? startEl.value.replace('T', ' ') + ':00' : null;
-  const endParam   = endEl?.value ? endEl.value.replace('T', ' ') + ':00' : null;
+  const startParam = startEl?.value || null;
+  const endParam = endEl?.value || null;
 
   try {
-    // JEDNO, lekkie zapytanie do bazy o trajektorie ograniczone do strefy i czasu
     const sharksTrajectories = await API.getZoneTrajectories(gridId, startParam, endParam);
 
     if (!sharksTrajectories.length) {
@@ -384,77 +377,56 @@ async function runZoneTrajectoryFilter() {
       return;
     }
 
-    const COLORS = ['#00e5c8','#0099ff','#ff6b35','#a855f7','#f59e0b','#ec4899','#22c55e','#ef4444'];
+    // Dynamiczne generowanie koloru jeśli rekinów jest więcej niż zdefiniowanych kolorów
+    const getDynamicColor = (index) => {
+      const COLORS = ['#00e5c8','#0099ff','#ff6b35','#a855f7','#f59e0b','#ec4899','#22c55e','#ef4444'];
+      if (index < COLORS.length) return COLORS[index];
+      // Generowanie koloru bazowanego na indeksie, jeśli zabraknie stałych
+      return `hsl(${(index * 137.5) % 360}, 70%, 60%)`;
+    };
+
     const bounds = [];
 
-    // Przetwarzamy dane zwrócone z jednego zapytania backendu
     sharksTrajectories.forEach((sharkData, i) => {
       const traj = sharkData.trajectory || [];
-      const pts = traj.map(p => [p.lat, p.lon]);
-      if (!pts.length) return;
+      if (!traj.length) return;
 
-      const color = COLORS[i % COLORS.length];
-      const line = L.polyline(pts, { color, weight: 2, opacity: 0.75, dashArray: '5 4' });
-      const dotLayer = L.layerGroup();
+      const layer = createTrajectoryLayer(traj, {
+        color: getDynamicColor(i),
+        sharkName: sharkData.name || sharkData.sharkId
+      }).addTo(State.map);
 
-      pts.forEach((pt, j) => {
-        const isFirst = (j === 0);
-        const isLast  = (j === pts.length - 1);
-
-        L.circleMarker(pt, {
-          radius: (isFirst || isLast) ? 12 : 6,
-          fillColor: isFirst ? '#0099ff' : (isLast ? '#22c55e' : color),
-          color: '#060d18',
-          weight: 1.5,
-          fillOpacity: 1,
-        }).bindTooltip(`${sharkData.name || sharkData.sharkId} — ${traj[j]?.timestamp || ''}`, { direction: 'top' })
-          .addTo(dotLayer);
-      });
-
-      const layer = L.layerGroup([line, dotLayer]).addTo(State.map);
       State.zoneTrajectoryLayers.push(layer);
-      pts.forEach(pt => bounds.push(pt));
+
+      // Zbieranie punktów do fitBounds
+      traj.forEach(p => bounds.push([p.lat, p.lon]));
     });
 
     if (bounds.length) State.map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40] });
 
     const trajBtn = document.getElementById('zone-traj-all-btn');
-    if (typeof setZoneTrajBtnToHide === 'function') {
-      setZoneTrajBtnToHide(trajBtn);
-    }
+    if (typeof setZoneTrajBtnToHide === 'function') setZoneTrajBtnToHide(trajBtn);
 
     if (msg) {
       msg.className = 'form-msg success';
       msg.textContent = `✓ Showing trajectories for ${sharksTrajectories.length} sharks inside ${gridId}`;
     }
   } catch (e) {
-    if (msg) {
-      msg.className = 'form-msg error';
-      msg.textContent = '✗ ' + e.message;
-    }
+    if (msg) { msg.className = 'form-msg error'; msg.textContent = '✗ ' + e.message; }
   }
 }
+
 // ═══════════════════════════════════════════
 // SHARK SELECT / DRAWER
 // ═══════════════════════════════════════════
-// function selectShark(shark) {
-//   State.selectedShark = shark;
-//   State.selectedSharkTrajectory = null;
-//   document.querySelectorAll('.shark-card').forEach(c => c.classList.remove('active'));
-//   const card = document.querySelector(`.shark-card[data-id="${shark.sharkId}"]`);
-//   if (card) card.classList.add('active');
-//   openDrawer(shark);
-// }
 
 function openDrawer(shark) {
-  // First render without trajectory bounds (we don't have them yet)
   document.getElementById('drawer-content').innerHTML = UI.buildDrawerHTML(shark, null);
   document.getElementById('shark-drawer').classList.add('open');
   wireDrawerButtons(shark);
 }
 
 function wireDrawerButtons(shark) {
-  // Pre-fetch trajectory to get date bounds
   fetchTrajectoryMeta(shark.sharkId);
 
   document.getElementById('trajectory-btn')?.addEventListener('click', () => {
@@ -503,7 +475,6 @@ function toDatetimeLocal(ts) {
 async function applyTrajectoryFilter(sharkId) {
   const btn = document.getElementById('trajectory-btn');
 
-
   if (State.trajectoryLayer && btn && btn.textContent.includes('HIDE')) {
     State.map.removeLayer(State.trajectoryLayer);
     State.trajectoryLayer = null;
@@ -527,31 +498,28 @@ async function applyTrajectoryFilter(sharkId) {
     if (startVal && endVal) {
       const s = startVal.replace('T', ' ') + ':00';
       const e = endVal.replace('T', ' ')   + ':00';
-      traj = traj.filter(p => {
-        if (!p.timestamp) return true;
-        return p.timestamp >= s && p.timestamp <= e;
-      });
+      traj = traj.filter(p => !p.timestamp || (p.timestamp >= s && p.timestamp <= e));
     }
 
     if (!traj.length) throw new Error('No points in selected range');
 
     if (State.trajectoryLayer) State.map.removeLayer(State.trajectoryLayer);
 
-    const pts = traj.map(p => [p.lat, p.lon]);
-    const line = L.polyline(pts, { color: '#00e5c8', weight: 2, opacity: 0.85, dashArray: '4 4' });
-    const dotLayer = L.layerGroup();
-    const sharkName = State.selectedShark?.name || 'Shark'; // Pobranie imienia z aktualnego stanu
+    // 1. Używamy helpera, ale zapisujemy referencję do warstwy
+    State.trajectoryLayer = createTrajectoryLayer(traj, {
+      color: '#00e5c8',
+      sharkName: State.selectedShark?.name || 'Shark'
+    }).addTo(State.map);
 
-    pts.forEach((pt, i) => {
-      L.circleMarker(pt, {
-        radius: (i === 0 || i === pts.length - 1) ? 12 : 6,
-       fillColor: i === 0 ? '#0099ff' : (i === pts.length - 1 ? '#22c55e' : '#00e5c8'),
-        color: '#060d18', weight: 1.5, fillOpacity: 1,
-      }).bindTooltip(`${sharkName} — ${traj[i]?.timestamp || ''}`, { direction: 'top' }).addTo(dotLayer);
-    });
+    // 2. Aby uniknąć błędu z getBounds, wyciągamy linię z grupy
+    // Zakładamy, że createTrajectoryLayer zwraca L.layerGroup([line, dotLayer])
+    const layers = State.trajectoryLayer.getLayers();
+    const line = layers[0];
 
-    State.trajectoryLayer = L.layerGroup([line, dotLayer]).addTo(State.map);
-    State.map.fitBounds(line.getBounds(), { padding: [40, 40] });
+    if (line && typeof line.getBounds === 'function') {
+      State.map.fitBounds(line.getBounds(), { padding: [40, 40] });
+    }
+
     UI.renderTrajectoryTimeline(traj);
 
     if (btn) {
@@ -615,9 +583,8 @@ async function openZonePanel(gridId) {
       startEl.setAttribute('data-current-zone', gridId);
     }
 
-    // 3. Pobieramy aktualne (lub nowo nałożone) wartości filtrów czasowych
-    const startParam = startEl?.value ? startEl.value.replace('T', ' ') + ':00' : null;
-    const endParam   = endEl?.value ? endEl.value.replace('T', ' ') + ':00' : null;
+    const startParam = startEl?.value || null;
+    const endParam   = endEl?.value || null;
 
     // Pobieramy przefiltrowaną listę rekinów z API
     const data = await API.getZone(gridId, startParam, endParam);
@@ -828,12 +795,8 @@ function initAnalyticsHandlers() {
 }
 
 async function runAnalysis() {
-  const startInput = document.getElementById('ana-start').value;
-  const endInput   = document.getElementById('ana-end').value;
-
-  // Konwersja formatu 'YYYY-MM-DDTHH:MM' -> 'YYYY-MM-DD HH:MM:SS'
-  const start = (startInput || '2000-01-01T00:00').replace('T', ' ') + ':00';
-  const end   = (endInput   || '2030-12-31T23:59').replace('T', ' ') + ':00';
+  const start = document.getElementById('ana-start').value || '2000-01-01T00:00';
+  const end   = document.getElementById('ana-end').value   || '2030-12-31T23:59';
 
   const limit = parseInt(document.getElementById('ana-limit').value) || 10;
   const grid  = document.getElementById('analytics-grid');
@@ -1102,6 +1065,40 @@ function triggerZoneRefresh() {
   }
 }
 
+/**
+ * Common helper to render shark trajectory lines and markers.
+ * @param {Array} points - Array of {lat, lon, timestamp} objects.
+ * @param {Object} options - Configuration for styling and tooltips.
+ * @returns {L.LayerGroup}
+ */
+function createTrajectoryLayer(points, { color = '#00e5c8', sharkName = 'Shark' } = {}) {
+  const pts = points.map(p => [p.lat, p.lon]);
+
+  const line = L.polyline(pts, {
+    color: color,
+    weight: 2,
+    opacity: 0.85,
+    dashArray: '4 4'
+  });
+
+  const dotLayer = L.layerGroup();
+  points.forEach((p, i) => {
+    const isFirst = (i === 0);
+    const isLast  = (i === points.length - 1);
+
+    L.circleMarker([p.lat, p.lon], {
+      radius: (isFirst || isLast) ? 12 : 6,
+      fillColor: isFirst ? '#0099ff' : (isLast ? '#22c55e' : color),
+      color: '#060d18',
+      weight: 1.5,
+      fillOpacity: 1,
+    }).bindTooltip(`${sharkName} — ${p.timestamp || ''}`, { direction: 'top' })
+      .addTo(dotLayer);
+  });
+
+  return L.layerGroup([line, dotLayer]);
+}
+
 // ===========================================================================
 // TRANSLATE ANALYTICS CLUSTERS TO MAP VIEW
 // ===========================================================================
@@ -1149,8 +1146,8 @@ window.transferClustersToMap = function() {
   // 7. Odpytujemy API o klastry, przekazując DOKŁADNIE TEN SAM LIMIT co w tabeli
   setTimeout(async () => {
     try {
-      const start = (anaStart || '2000-01-01T00:00').replace('T', ' ') + ':00';
-      const end   = (anaEnd   || '2030-12-31T23:59').replace('T', ' ') + ':00';
+      const start = anaStart || '2000-01-01T00:00';
+      const end   = anaEnd   || '2030-12-31T23:59';
 
       const data = await API.getClusters(start, end, anaLimit);
 
