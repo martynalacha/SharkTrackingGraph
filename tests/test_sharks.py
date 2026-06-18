@@ -1,3 +1,7 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from httpx import AsyncClient
 
 # ---------------------------------------------------------------------------
 # GET /api/sharks/  —  list all sharks
