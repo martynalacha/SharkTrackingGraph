@@ -223,73 +223,7 @@ async function loadZoneMarkers() {
     setStatus('Zone data unavailable');
   }
 }
-async function loadMapView() {
-  await Promise.all([loadSharks(), loadZoneMarkers()]);
-  populateZoneFilterDropdown();
-}
 
-async function loadSharks() {
-  try {
-    State.sharks = await API.getSharks();
-    State.filteredSharks = [...State.sharks];
-    UI.renderSharkList(State.filteredSharks);
-    UI.renderSpeciesOptions(State.sharks, 'filter-species');
-    document.getElementById('shark-count').textContent = State.sharks.length + ' tracked';
-    setStatus('Loaded ' + State.sharks.length + ' sharks');
-    initSidebarFilters();
-  } catch (e) {
-    setStatus('Error: ' + e.message);
-    document.getElementById('shark-list').innerHTML = '<div class="loading-msg">Failed to load sharks.</div>';
-  }
-}
-
-async function loadZoneMarkers() {
-  try {
-    const markers = await API.getZoneMarkers();
-    State.zoneMarkers = markers;
-
-    const globalBounds = await API.getZoneBounds("ALL_ZONES");
-
-    State.globalTimeBounds = {
-      start: globalBounds.start.replace(' ', 'T').substring(0, 16),
-      end: globalBounds.end.replace(' ', 'T').substring(0, 16)
-    };
-
-    // 1. Kontrola dat dla suwaków na MAPIE (Panel ZONE FOCUS)
-    const startEl = document.getElementById('zfp-start');
-    const endEl = document.getElementById('zfp-end');
-    if (startEl && endEl) {
-      startEl.min = State.globalTimeBounds.start; startEl.max = State.globalTimeBounds.end;
-      endEl.min = State.globalTimeBounds.start;   endEl.max = State.globalTimeBounds.end;
-      startEl.value = State.globalTimeBounds.start;
-      endEl.value = State.globalTimeBounds.end;
-    }
-
-    // 2. Kontrola dat dla panelu ANALYTICS
-    const anaStartEl = document.getElementById('ana-start');
-    const anaEndEl   = document.getElementById('ana-end');
-    if (anaStartEl && anaEndEl) {
-      anaStartEl.min = State.globalTimeBounds.start; anaStartEl.max = State.globalTimeBounds.end;
-      anaEndEl.min   = State.globalTimeBounds.start; anaEndEl.max   = State.globalTimeBounds.end;
-      anaStartEl.value = State.globalTimeBounds.start;
-      anaEndEl.value   = State.globalTimeBounds.end;
-    }
-
-    // 3. Kontrola dat dla suwaków nowego panelu na MAPIE (Panel CLUSTER FOCUS)
-    const cfpStartEl = document.getElementById('cfp-start');
-    const cfpEndEl   = document.getElementById('cfp-end');
-    if (cfpStartEl && cfpEndEl) {
-      cfpStartEl.min = State.globalTimeBounds.start; cfpStartEl.max = State.globalTimeBounds.end;
-      cfpEndEl.min   = State.globalTimeBounds.start; cfpEndEl.max   = State.globalTimeBounds.end;
-      cfpStartEl.value = State.globalTimeBounds.start;
-      cfpEndEl.value   = State.globalTimeBounds.end;
-    }
-
-    if (State.showZones) renderZoneMarkers(markers);
-  } catch (e) {
-    setStatus('Zone data unavailable');
-  }
-}
 
 function renderZoneMarkers(markers) {
   if (_zoneLayerGroup) State.map.removeLayer(_zoneLayerGroup);
@@ -503,14 +437,14 @@ async function runZoneTrajectoryFilter() {
 // ═══════════════════════════════════════════
 // SHARK SELECT / DRAWER
 // ═══════════════════════════════════════════
-function selectShark(shark) {
-  State.selectedShark = shark;
-  State.selectedSharkTrajectory = null;
-  document.querySelectorAll('.shark-card').forEach(c => c.classList.remove('active'));
-  const card = document.querySelector(`.shark-card[data-id="${shark.sharkId}"]`);
-  if (card) card.classList.add('active');
-  openDrawer(shark);
-}
+// function selectShark(shark) {
+//   State.selectedShark = shark;
+//   State.selectedSharkTrajectory = null;
+//   document.querySelectorAll('.shark-card').forEach(c => c.classList.remove('active'));
+//   const card = document.querySelector(`.shark-card[data-id="${shark.sharkId}"]`);
+//   if (card) card.classList.add('active');
+//   openDrawer(shark);
+// }
 
 function openDrawer(shark) {
   // First render without trajectory bounds (we don't have them yet)

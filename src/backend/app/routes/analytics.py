@@ -1,15 +1,21 @@
 import os
 
 import pandas as pd
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from src.backend.app.database.connection import driver
 from src.backend.app.database.seeding import remap_telemetry_relations
+from src.backend.app.dependencies.auth import verify_admin_credentials
+from src.backend.app.schemas.common import RecalibrationResponse, TelemetryDateRangeResponse
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Operations"])
 
 
-@router.post("/recalibrate")
+@router.post(
+    "/recalibrate",
+    response_model=RecalibrationResponse,
+    dependencies=[Depends(verify_admin_credentials)],
+)
 async def trigger_recalibration(background_tasks: BackgroundTasks):
     """
     Admin-only endpoint to trigger dynamic spatial re-mapping
@@ -30,14 +36,18 @@ async def trigger_recalibration(background_tasks: BackgroundTasks):
     return {"status": "processing", "message": "Spatial relationship recalibration started in background."}
 
 
-@router.get("/api/telemetry/date-range")
-def get_telemetry_date_range():
+@router.get("/telemetry/date-range", response_model=TelemetryDateRangeResponse)
+async def get_telemetry_date_range():
     """Returns the global min and max timestamp across all PINGED_AT relations."""
     query = """
     MATCH ()-[r:PINGED_AT]->()
     RETURN min(r.timestamp) AS minDate, max(r.timestamp) AS maxDate
     """
-    with driver.session() as session:
-        result = session.run(query)
-        record = result.single()
+    async with driver.session() as session:
+        result = await session.run(query)
+        record = await result.single()
+
+        if not record:
+            return {"minDate": None, "maxDate": None}
+
         return {"minDate": record["minDate"], "maxDate": record["maxDate"]}

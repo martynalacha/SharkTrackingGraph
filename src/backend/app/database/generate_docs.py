@@ -1,4 +1,3 @@
-# English comments only
 import json
 import os
 import sys
