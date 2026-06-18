@@ -1,4 +1,3 @@
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -121,4 +120,3 @@ async def test_trigger_recalibration_missing_csv(async_client: AsyncClient):
         response = await async_client.post("/api/admin/recalibrate")
 
     assert response.status_code == 404
-
