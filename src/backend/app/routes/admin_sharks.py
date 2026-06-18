@@ -1,3 +1,5 @@
+from typing import Annotated
+
 import pandas as pd
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
@@ -110,7 +112,7 @@ async def delete_shark_profile(shark_id: str):
 
 
 @router.post("/import/telemetry", response_model=TelemetryImportResponse)
-async def import_telemetry_csv(file: UploadFile = File(...)):  # noqa: B008
+async def import_telemetry_csv(file: Annotated[UploadFile, File()]):
     """
     Ingests raw telemetry data from an uploaded CSV file, resolving spatial references
     and binding Shark nodes directly to the nearest OceanGrid nodes via PINGED_AT relations.
@@ -147,8 +149,11 @@ async def import_telemetry_csv(file: UploadFile = File(...)):  # noqa: B008
             "relationsCreated": total_pings,
         }
 
+    except HTTPException:
+        # FastAPI handles re-raised HTTPException automatically (e.g., returns 400)
+        raise
     except Exception as e:
-        # Added 'from e' to resolve the B904 error
+        # Only unexpected system errors become 500
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal ingestion pipeline error: {str(e)}"
         ) from e
