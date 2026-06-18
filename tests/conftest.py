@@ -1,15 +1,10 @@
 import asyncio
-import os
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 # Import the actual FastAPI application instance
 from src.backend.app.main import app
-
-os.environ["NEO4J_URI"] = "bolt://localhost:7687"  # noqa: E402
-os.environ["NEO4J_USER"] = "testuser"  # noqa: E402
-os.environ["NEO4J_PASSWORD"] = "testpassword"  # noqa: E402
 
 
 @pytest.fixture(scope="session")
