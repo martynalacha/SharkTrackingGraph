@@ -46,46 +46,6 @@
             }
           }
         }
-      },
-      "post": {
-        "tags": [
-          "Sharks"
-        ],
-        "summary": "Create Shark",
-        "description": "Creates a new Shark node in the database.",
-        "operationId": "create_shark_api_sharks__post",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SharkCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SharkResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/sharks/search": {
@@ -139,98 +99,6 @@
         "summary": "Get Shark Trajectory",
         "description": "Returns the chronological history of geographic points pinged by a specific shark,\nincluding zone coordinates and entity metadata for map visualization.",
         "operationId": "get_shark_trajectory_api_sharks__shark_id__trajectory_get",
-        "parameters": [
-          {
-            "name": "shark_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Shark Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/sharks/{shark_id}": {
-      "put": {
-        "tags": [
-          "Sharks"
-        ],
-        "summary": "Update Shark",
-        "description": "Updates the properties of an existing Shark node matching the sharkId.",
-        "operationId": "update_shark_api_sharks__shark_id__put",
-        "parameters": [
-          {
-            "name": "shark_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Shark Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SharkUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SharkResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Sharks"
-        ],
-        "summary": "Delete Shark",
-        "description": "Deletes a Shark node from the database along with all its connected relations.",
-        "operationId": "delete_shark_api_sharks__shark_id__delete",
         "parameters": [
           {
             "name": "shark_id",
@@ -349,11 +217,12 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "Start timestamp filter (YYYY-MM-DD HH:MM:SS)",
-              "default": "2000-01-01 00:00:00",
+              "format": "date-time",
+              "description": "Start timestamp filter (ISO 8601)",
+              "default": "2000-01-01T00:00:00",
               "title": "Start Time"
             },
-            "description": "Start timestamp filter (YYYY-MM-DD HH:MM:SS)"
+            "description": "Start timestamp filter (ISO 8601)"
           },
           {
             "name": "end_time",
@@ -361,11 +230,12 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "End timestamp filter (YYYY-MM-DD HH:MM:SS)",
-              "default": "2030-12-31 23:59:59",
+              "format": "date-time",
+              "description": "End timestamp filter (ISO 8601)",
+              "default": "2030-12-31T23:59:59",
               "title": "End Time"
             },
-            "description": "End timestamp filter (YYYY-MM-DD HH:MM:SS)"
+            "description": "End timestamp filter (ISO 8601)"
           }
         ],
         "responses": {
@@ -390,6 +260,142 @@
         }
       }
     },
+    "/api/zones/analysis/degree-centrality": {
+      "get": {
+        "tags": [
+          "Ocean Zones"
+        ],
+        "summary": "Get Zones Degree Centrality",
+        "description": "Executes a graph centrality analysis (Degree Centrality) to calculate\nthe mathematical importance of each OceanGrid node based on incoming telemetry connections.",
+        "operationId": "get_zones_degree_centrality_api_zones_analysis_degree_centrality_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of top ecological corridors to return",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of top ecological corridors to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zones/{grid_id}/trajectories": {
+      "get": {
+        "tags": [
+          "Ocean Zones"
+        ],
+        "summary": "Get Zone Sharks Trajectories",
+        "description": "Returns telemetry points for all sharks, but ONLY the PINGED_AT relationships\nthat occurred strictly within this specific zone and time range.",
+        "operationId": "get_zone_sharks_trajectories_api_zones__grid_id__trajectories_get",
+        "parameters": [
+          {
+            "name": "grid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Grid Id"
+            }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Start timestamp filter (ISO 8601)",
+              "default": "2000-01-01T00:00:00",
+              "title": "Start Time"
+            },
+            "description": "Start timestamp filter (ISO 8601)"
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "End timestamp filter (ISO 8601)",
+              "default": "2030-12-31T23:59:59",
+              "title": "End Time"
+            },
+            "description": "End timestamp filter (ISO 8601)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/verify": {
+      "get": {
+        "tags": [
+          "Admin Operations"
+        ],
+        "summary": "Verify Admin",
+        "description": "Lightweight credential-check endpoint for the admin login form.\nThe verify_admin_credentials dependency raises 401 on bad credentials,\nso reaching this body at all means the supplied Basic Auth was valid.",
+        "operationId": "verify_admin_api_admin_verify_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ]
+      }
+    },
     "/api/admin/recalibrate": {
       "post": {
         "tags": [
@@ -403,27 +409,36 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RecalibrationResponse"
+                }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ]
       }
     },
-    "/api/admin/api/telemetry/date-range": {
+    "/api/admin/telemetry/date-range": {
       "get": {
         "tags": [
           "Admin Operations"
         ],
         "summary": "Get Telemetry Date Range",
         "description": "Returns the global min and max timestamp across all PINGED_AT relations.",
-        "operationId": "get_telemetry_date_range_api_admin_api_telemetry_date_range_get",
+        "operationId": "get_telemetry_date_range_api_admin_telemetry_date_range_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/TelemetryDateRangeResponse"
+                }
               }
             }
           }
@@ -436,7 +451,7 @@
           "Admin Shark Management"
         ],
         "summary": "Create New Shark",
-        "description": "Creates a single new Shark node in the database and dynamically fetches\nits specific species image from Wikipedia without reloading any other data.",
+        "description": "Creates a single new Shark node in the database and dynamically fetches\nits specific species image from Wikipedia without reloading any other data.\nRejects the request if a Shark with the given sharkId already exists.",
         "operationId": "create_new_shark_api_admin_sharks__post",
         "requestBody": {
           "content": {
@@ -483,7 +498,7 @@
           "Admin Shark Management"
         ],
         "summary": "Update Shark Profile",
-        "description": "Updates the structural profile parameters of an existing Shark node by its sharkId.",
+        "description": "Updates the structural profile parameters of an existing Shark node by its sharkId.\nPola nieprzekazane w body (None) zostają bez zmian — nie są zerowane.",
         "operationId": "update_shark_profile_api_admin_sharks__shark_id__put",
         "security": [
           {
@@ -562,7 +577,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DetailResponse"
+                }
               }
             }
           },
@@ -602,7 +619,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/TelemetryImportResponse"
+                }
               }
             }
           },
@@ -677,7 +696,7 @@
           "Admin Zone Management"
         ],
         "summary": "Update Ocean Zone",
-        "description": "Updates the coordinates or properties of an existing OceanGrid node.",
+        "description": "Updates the coordinates of an existing OceanGrid node. Pola nieprzekazane\nw body (None) zostają bez zmian — nie są zerowane.",
         "operationId": "update_ocean_zone_api_admin_zones__grid_id__put",
         "security": [
           {
@@ -700,7 +719,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OceanGridCreate"
+                "$ref": "#/components/schemas/OceanGridUpdate"
               }
             }
           }
@@ -756,7 +775,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DetailResponse"
+                }
               }
             }
           },
@@ -788,11 +809,12 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "Start timestamp filter (YYYY-MM-DD HH:MM:SS)",
-              "default": "2000-01-01 00:00:00",
+              "format": "date-time",
+              "description": "Start timestamp filter (ISO 8601)",
+              "default": "2000-01-01T00:00:00",
               "title": "Start Time"
             },
-            "description": "Start timestamp filter (YYYY-MM-DD HH:MM:SS)"
+            "description": "Start timestamp filter (ISO 8601)"
           },
           {
             "name": "end_time",
@@ -800,11 +822,12 @@
             "required": false,
             "schema": {
               "type": "string",
-              "description": "End timestamp filter (YYYY-MM-DD HH:MM:SS)",
-              "default": "2030-12-31 23:59:59",
+              "format": "date-time",
+              "description": "End timestamp filter (ISO 8601)",
+              "default": "2030-12-31T23:59:59",
               "title": "End Time"
             },
-            "description": "End timestamp filter (YYYY-MM-DD HH:MM:SS)"
+            "description": "End timestamp filter (ISO 8601)"
           },
           {
             "name": "limit",
@@ -890,6 +913,19 @@
         ],
         "title": "Body_import_telemetry_csv_api_admin_sharks_import_telemetry_post"
       },
+      "DetailResponse": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "DetailResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -907,18 +943,28 @@
         "properties": {
           "centerLat": {
             "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
             "title": "Centerlat",
-            "example": 34.5
+            "examples": [
+              34.5
+            ]
           },
           "centerLon": {
             "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
             "title": "Centerlon",
-            "example": -75.2
+            "examples": [
+              -75.2
+            ]
           },
           "gridId": {
             "type": "string",
             "title": "Gridid",
-            "example": "ZONE_999"
+            "examples": [
+              "ZONE_999"
+            ]
           }
         },
         "type": "object",
@@ -933,18 +979,28 @@
         "properties": {
           "centerLat": {
             "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
             "title": "Centerlat",
-            "example": 34.5
+            "examples": [
+              34.5
+            ]
           },
           "centerLon": {
             "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
             "title": "Centerlon",
-            "example": -75.2
+            "examples": [
+              -75.2
+            ]
           },
           "gridId": {
             "type": "string",
             "title": "Gridid",
-            "example": "ZONE_999"
+            "examples": [
+              "ZONE_999"
+            ]
           }
         },
         "type": "object",
@@ -955,43 +1011,115 @@
         ],
         "title": "OceanGridResponse"
       },
+      "OceanGridUpdate": {
+        "properties": {
+          "centerLat": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -90.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Centerlat",
+            "examples": [
+              34.5
+            ]
+          },
+          "centerLon": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 180.0,
+                "minimum": -180.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Centerlon",
+            "examples": [
+              -75.2
+            ]
+          }
+        },
+        "type": "object",
+        "title": "OceanGridUpdate"
+      },
+      "RecalibrationResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "RecalibrationResponse"
+      },
       "SharkCreate": {
         "properties": {
           "name": {
             "type": "string",
             "title": "Name",
-            "example": "Deep Blue"
+            "examples": [
+              "Deep Blue"
+            ]
           },
           "species": {
             "type": "string",
             "title": "Species",
-            "example": "White Shark (Carcharodon carcharias)"
+            "examples": [
+              "White Shark (Carcharodon carcharias)"
+            ]
           },
           "gender": {
             "type": "string",
             "title": "Gender",
-            "example": "Female"
+            "examples": [
+              "Female"
+            ]
           },
           "length": {
             "type": "number",
+            "exclusiveMinimum": 0.0,
             "title": "Length",
-            "example": 6.1
+            "examples": [
+              6.1
+            ]
           },
           "weight": {
             "type": "number",
+            "exclusiveMinimum": 0.0,
             "title": "Weight",
-            "example": 2200.0
+            "examples": [
+              2200.0
+            ]
           },
           "speciesImage": {
             "type": "string",
             "title": "Speciesimage",
             "default": "",
-            "example": "https://upload.wikimedia.org/wikipedia/commons/..."
+            "examples": [
+              "https://upload.wikimedia.org/wikipedia/commons/..."
+            ]
           },
           "sharkId": {
             "type": "string",
             "title": "Sharkid",
-            "example": "99999"
+            "examples": [
+              "99999"
+            ]
           }
         },
         "type": "object",
@@ -1010,38 +1138,63 @@
           "name": {
             "type": "string",
             "title": "Name",
-            "example": "Deep Blue"
+            "examples": [
+              "Deep Blue"
+            ]
           },
           "species": {
             "type": "string",
             "title": "Species",
-            "example": "White Shark (Carcharodon carcharias)"
+            "examples": [
+              "White Shark (Carcharodon carcharias)"
+            ]
           },
           "gender": {
             "type": "string",
             "title": "Gender",
-            "example": "Female"
+            "examples": [
+              "Female"
+            ]
           },
           "length": {
-            "type": "number",
-            "title": "Length",
-            "example": 6.1
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length"
           },
           "weight": {
-            "type": "number",
-            "title": "Weight",
-            "example": 2200.0
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
           },
           "speciesImage": {
-            "type": "string",
-            "title": "Speciesimage",
-            "default": "",
-            "example": "https://upload.wikimedia.org/wikipedia/commons/..."
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speciesimage"
           },
           "sharkId": {
             "type": "string",
             "title": "Sharkid",
-            "example": "99999"
+            "examples": [
+              "99999"
+            ]
           }
         },
         "type": "object",
@@ -1049,8 +1202,6 @@
           "name",
           "species",
           "gender",
-          "length",
-          "weight",
           "sharkId"
         ],
         "title": "SharkResponse"
@@ -1058,46 +1209,132 @@
       "SharkUpdate": {
         "properties": {
           "name": {
-            "type": "string",
-            "title": "Name",
-            "example": "Deep Blue"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
           },
           "species": {
-            "type": "string",
-            "title": "Species",
-            "example": "White Shark (Carcharodon carcharias)"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species"
           },
           "gender": {
-            "type": "string",
-            "title": "Gender",
-            "example": "Female"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender"
           },
           "length": {
-            "type": "number",
-            "title": "Length",
-            "example": 6.1
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length"
           },
           "weight": {
-            "type": "number",
-            "title": "Weight",
-            "example": 2200.0
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
           },
           "speciesImage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speciesimage"
+          }
+        },
+        "type": "object",
+        "title": "SharkUpdate"
+      },
+      "TelemetryDateRangeResponse": {
+        "properties": {
+          "minDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mindate"
+          },
+          "maxDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxdate"
+          }
+        },
+        "type": "object",
+        "title": "TelemetryDateRangeResponse"
+      },
+      "TelemetryImportResponse": {
+        "properties": {
+          "status": {
             "type": "string",
-            "title": "Speciesimage",
-            "default": "",
-            "example": "https://upload.wikimedia.org/wikipedia/commons/..."
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "recordsProcessed": {
+            "type": "integer",
+            "title": "Recordsprocessed"
+          },
+          "relationsCreated": {
+            "type": "integer",
+            "title": "Relationscreated"
           }
         },
         "type": "object",
         "required": [
-          "name",
-          "species",
-          "gender",
-          "length",
-          "weight"
+          "status",
+          "message",
+          "recordsProcessed",
+          "relationsCreated"
         ],
-        "title": "SharkUpdate"
+        "title": "TelemetryImportResponse"
       },
       "ValidationError": {
         "properties": {
