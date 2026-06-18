@@ -9,7 +9,7 @@ const UI = (() => {
     const l = g.toLowerCase();
     if (l === 'male')   return '♂';
     if (l === 'female') return '♀';
-    return '~';
+    return '';
   }
 
   function thumbHTML(shark, size = 40) {
@@ -41,7 +41,7 @@ const UI = (() => {
         <div class="shark-info">
           <div class="shark-info-name">${s.name}</div>
           <div class="shark-info-species">${s.species || '—'}</div>
-          <div class="shark-info-meta">${genderSym(s.gender)} ${s.length ? parseImperialLengthToMetric(s.length) : ''} ${s.weight ? ' · ' + parseImperialWeightToMetric(s.weight) : ''}</div>
+          <div class="shark-info-meta">${genderSym(s.gender)} ${s.length ? `${s.length}m` : ''} ${s.weight ? ` · ${s.weight}kg` : ''}</div>
         </div>
       </div>`;
     }).join('');
@@ -62,39 +62,6 @@ const UI = (() => {
   }
 
 
-function parseImperialLengthToMetric(lengthStr) {
-    if (!lengthStr) return '—';
-    if (typeof lengthStr === 'number') return lengthStr.toFixed(2) + ' m';
-
-    // Sprawdzenie czy format to np. "9 ft 7 in."
-    const ftMatch = lengthStr.match(/(\d+)\s*ft/);
-    const inMatch = lengthStr.match(/(\d+)\s*in/);
-
-    if (ftMatch || inMatch) {
-      let totalMeters = 0;
-      if (ftMatch) totalMeters += parseInt(ftMatch[1], 10) * 0.3048;
-      if (inMatch) totalMeters += parseInt(inMatch[1], 10) * 0.0254;
-      return totalMeters.toFixed(2) + ' m';
-    }
-
-    return lengthStr; // Zwróć oryginalny tekst, jeśli nie pasuje do wzorca
-  }
-
-  function parseImperialWeightToMetric(weightStr) {
-    if (!weightStr) return '—';
-    if (typeof weightStr === 'number') return weightStr.toFixed(1) + ' kg';
-
-    // Sprawdzenie czy format to np. "395.5 lb"
-    const lbMatch = weightStr.match(/([\d.]+)\s*lb/);
-
-    if (lbMatch) {
-      const lbs = parseFloat(lbMatch[1]);
-      const kgs = lbs * 0.45359237;
-      return kgs.toFixed(1) + ' kg';
-    }
-
-    return weightStr; // Zwróć oryginalny tekst, jeśli nie pasuje do wzorca
-  }
 
 function buildDrawerHTML(shark) {
     const img = shark.speciesImage
@@ -104,9 +71,8 @@ function buildDrawerHTML(shark) {
     : `<div class="drawer-image-placeholder">🦈</div>`;
 
     // Walidacja danych wejściowych przed renderowaniem
-    const displayLength = shark.length ? parseImperialLengthToMetric(shark.length) : '—';
-    const displayWeight = shark.weight ? parseImperialWeightToMetric(shark.weight) : '—';
-
+    const displayLength = shark.length ? `${shark.length} m` : '—';
+    const displayWeight = shark.weight ? `${shark.weight} kg` : '—';
     return `
       ${img}
       <div class="drawer-info">
@@ -225,9 +191,12 @@ function buildGridCard(s) {
         <div class="shark-grid-name">${s.name}</div>
         <div class="shark-grid-species">${s.species || '—'}</div>
         <div class="shark-grid-tags">
-          <span class="tag tag-accent">${genderSym(s.gender)} ${s.gender || '?'}</span>
-          ${s.length ? `<span class="tag">${parseImperialLengthToMetric(s.length)}</span>` : ''}
-          ${s.weight ? `<span class="tag">${parseImperialWeightToMetric(s.weight)}</span>` : ''}
+          ${ (s.gender && s.gender.toString().toLowerCase() !== 'nan')
+            ? `<span class="tag tag-accent">${genderSym(s.gender)} ${s.gender}</span>`
+            : ''
+          }
+          ${s.length ? `<span class="tag">${s.length} m</span>` : ''}
+          ${s.weight ? `<span class="tag">${s.weight} kg</span>` : ''}
         </div>
       </div>`;
     return div;

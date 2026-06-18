@@ -78,13 +78,12 @@ const API = (() => {
 
   // ─── ADMIN ────────────────────────────────────
 
-  async function verifyAdmin(user, pass) {
-    // Use a lightweight admin-only endpoint to test creds
-    const res = await fetch('/api/admin/sharks/', {
+ async function verifyAdmin(user, pass) {
+    const res = await fetch('/api/admin/verify', {
       method: 'GET',
       headers: { 'Authorization': 'Basic ' + btoa(user + ':' + pass) }
     });
-    return res.status !== 401;
+    return res.ok;
   }
 
   async function createShark(data) {
@@ -178,11 +177,6 @@ const API = (() => {
     return json;
   }
 
-  async function getZoneBounds(gridId) {
-    const res = await fetch(`/api/zones/${encodeURIComponent(gridId)}/bounds`);
-    if (!res.ok) throw new Error('Zone bounds not found');
-    return res.json();
-  }
 
   // NOWA FUNKCJA DO POBIERANIA TRAJEKTORII STREFOWYCH
   async function getZoneTrajectories(gridId, start, end) {
@@ -195,7 +189,6 @@ const API = (() => {
 
   async function loadClusterMarkers() {
   try {
-    // Bezpieczne parsowanie formatu HTML: zastępujemy 'T' spacją i dodajemy sekundy
     const start = (State.globalTimeBounds?.start || '2000-01-01T00:00').replace('T', ' ') + ':00';
     const end   = (State.globalTimeBounds?.end   || '2030-12-31T23:59').replace('T', ' ') + ':00';
 
