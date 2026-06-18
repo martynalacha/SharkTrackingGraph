@@ -57,13 +57,32 @@ jobs:
     - name: Seed mock database data
       env:
         PYTHONPATH: ".:src"
+        NEO4J_URI: "bolt://localhost:7687"
+        NEO4J_USER: "neo4j"
+        NEO4J_PASSWORD: "secret_password_ci"
       run: |
         python -c "
-        from src.backend.app.database.connection import driver
-        with driver.session() as session:
-            session.run('CREATE (:Shark)-[:MIGRATED_TO]->(:OceanGrid)')
-        "
+        import asyncio
+        import os
+        from neo4j import GraphDatabase
 
+        uri = os.environ['NEO4J_URI']
+        user = os.environ['NEO4J_USER']
+        password = os.environ['NEO4J_PASSWORD']
+
+        driver = GraphDatabase.driver(uri, auth=(user, password))
+
+        # Używamy synchronicznej sesji, więc nie używamy async with
+        def seed():
+            session = driver.session()
+            try:
+                session.run('CREATE (:Shark)-[:MIGRATED_TO]->(:OceanGrid)')
+            finally:
+                session.close()
+
+        seed()
+        driver.close()
+        "
     - name: Generate dynamic documentation files
       env:
         PYTHONPATH: ".:src"
