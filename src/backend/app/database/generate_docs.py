@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import sys
@@ -37,13 +38,13 @@ def generate_openapi_schema():
     print(f"Successfully generated {schema_path}")
 
 
-def main():
+async def main():
     """Generates all dynamic documentation files for the project."""
     os.makedirs(DOCS_DIR, exist_ok=True)
 
     # 1. Generate Database Documentation
-    diagram = generate_meta_diagram()
-    constraints = generate_meta_constraints()
+    diagram = await generate_meta_diagram()
+    constraints = await generate_meta_constraints()
 
     content = f"""# Database Architecture & Schema
 
@@ -70,4 +71,4 @@ def main():
 
 # Fixed indentation: this block must be at the root level of the file
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

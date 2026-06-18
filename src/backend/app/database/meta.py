@@ -20,7 +20,6 @@ async def generate_meta_diagram() -> str:
     relationships_definitions = set()
 
     try:
-        # Zamiast 'with', tworzymy sesję i zamykamy ją ręcznie
         session = driver.session()
         try:
             result = await session.run(query)
