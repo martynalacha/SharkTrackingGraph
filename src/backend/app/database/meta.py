@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger("uvicorn.error")
 
 
-def generate_meta_diagram() -> str:
+async def generate_meta_diagram() -> str:
     """
     Queries Neo4j schema visualization and generates a Mermaid.js graph diagram string.
 
@@ -20,20 +20,23 @@ def generate_meta_diagram() -> str:
     relationships_definitions = set()
 
     try:
-        with driver.session() as session:
-            result = session.run(query)
-            for record in result:
-                # Process node labels
+        # Zamiast 'with', tworzymy sesję i zamykamy ją ręcznie
+        session = driver.session()
+        try:
+            result = await session.run(query)
+            # Fetch all records as a list since 'result' is async
+            records = [record async for record in result]
+            for record in records:
                 for node in record["nodes"]:
                     label = list(node.labels)[0]
                     nodes_definitions.add(f'    {label}["({label})"]')
-
-                # Process relationship types
                 for rel in record["relationships"]:
                     start_label = list(rel.start_node.labels)[0]
                     end_label = list(rel.end_node.labels)[0]
                     rel_type = rel.type
                     relationships_definitions.add(f"    {start_label} -->|{rel_type}| {end_label}")
+        finally:
+            await session.close()
 
         # Build Markdown output
         mermaid_lines = ["", "```mermaid", "graph TD"]
@@ -49,7 +52,7 @@ def generate_meta_diagram() -> str:
         return f"\n*Failed to generate schema diagram: {e}*\n"
 
 
-def generate_meta_constraints() -> str:
+async def generate_meta_constraints() -> str:
     """
     Fetches all active database constraints from Neo4j and formats them into a Markdown table.
 
@@ -66,9 +69,10 @@ def generate_meta_constraints() -> str:
     ]
 
     try:
-        with driver.session() as session:
-            result = session.run(query)
-            records = list(result)
+        session = driver.session()
+        try:
+            result = await session.run(query)
+            records = [record async for record in result]
 
             if not records:
                 return "\n*No active constraints found in the database.*\n"
@@ -82,6 +86,8 @@ def generate_meta_constraints() -> str:
                 status = record.get("status", "ENABLED")
 
                 table_lines.append(f"| {name} | {c_type} | {entity}(:{labels}) | {properties} | {status} |")
+        finally:
+            await session.close()
 
         table_lines.append("")
         return "\n".join(table_lines)
