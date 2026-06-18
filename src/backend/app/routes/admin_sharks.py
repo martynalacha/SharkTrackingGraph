@@ -86,9 +86,7 @@ async def update_shark_profile(shark_id: str, shark_data: SharkUpdate):
         )
         record = await result.single()
         if not record:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"Shark node with ID '{shark_id}' not found."
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Shark node with ID '{shark_id}' not found.")
         return dict(record)
 
 
@@ -107,9 +105,7 @@ async def delete_shark_profile(shark_id: str):
         result = await session.run(query, shark_id=shark_id)
         record = await result.single()
         if record["deleted_count"] == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"Shark node with ID '{shark_id}' not found."
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Shark node with ID '{shark_id}' not found.")
         return {"detail": f"Shark '{shark_id}' and all connected topology edges successfully deleted."}
 
 
@@ -127,9 +123,7 @@ async def import_telemetry_csv(file: UploadFile = File(...)):  # noqa: B008
 
         required_cols = {"sharkId", "datetime", "lat", "lon"}
         if not required_cols.issubset(df.columns):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=f"CSV must contain headers: {required_cols}"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"CSV must contain headers: {required_cols}")
 
         df = df.fillna("")
 

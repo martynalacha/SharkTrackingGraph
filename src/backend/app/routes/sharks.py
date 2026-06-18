@@ -75,9 +75,7 @@ async def get_shark_trajectory(shark_id: str):
 
         trajectory = []
         for rec in records:
-            trajectory.append(
-                {"timestamp": rec["timestamp"], "lat": rec["lat"], "lon": rec["lon"], "zone": rec["zone"]}
-            )
+            trajectory.append({"timestamp": rec["timestamp"], "lat": rec["lat"], "lon": rec["lon"], "zone": rec["zone"]})
 
         return {
             "sharkId": shark_id,
