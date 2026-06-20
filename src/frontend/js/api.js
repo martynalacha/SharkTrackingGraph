@@ -178,7 +178,6 @@ const API = (() => {
   }
 
 
-  // NOWA FUNKCJA DO POBIERANIA TRAJEKTORII STREFOWYCH
   async function getZoneTrajectories(gridId, start, end) {
     let url = `/api/zones/${encodeURIComponent(gridId)}/trajectories`;
     if (start && end) url += `?start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}`;
@@ -186,36 +185,6 @@ const API = (() => {
     if (!res.ok) throw new Error('Failed to fetch zone trajectories');
     return res.json();
   }
-
-  async function loadClusterMarkers() {
-  try {
-    const start = (State.globalTimeBounds?.start || '2000-01-01T00:00').replace('T', ' ') + ':00';
-    const end   = (State.globalTimeBounds?.end   || '2030-12-31T23:59').replace('T', ' ') + ':00';
-
-    const data = await API.getClusters(start, end, 20);
-    if (_clusterLayerGroup) State.map.removeLayer(_clusterLayerGroup);
-    _clusterLayerGroup = L.layerGroup();
-
-    if (!data.clusters || !data.clusters.length) return;
-
-    const maxPings = Math.max(...data.clusters.map(c => c.totalPings), 1);
-    data.clusters.forEach(c => {
-      const ratio = c.totalPings / maxPings;
-      L.circleMarker([c.centerLat, c.centerLon], {
-        radius: Math.round(14 + ratio * 22),
-        fillColor: '#00e5c8',
-        color: '#00e5c8',
-        weight: 1,
-        opacity: 0.3 + ratio * 0.5,
-        fillOpacity: (0.3 + ratio * 0.5) * 0.35,
-      }).bindPopup(`<strong>${c.gridId}</strong><br>Pings: ${c.totalPings}<br>Sharks: ${c.uniqueSharksCount}`)
-        .addTo(_clusterLayerGroup);
-    });
-    if (State.showClusters) _clusterLayerGroup.addTo(State.map);
-  } catch (e) {
-    setStatus('Cluster data unavailable');
-  }
-}
 
 
 

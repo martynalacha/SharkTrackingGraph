@@ -70,7 +70,6 @@ function buildDrawerHTML(shark) {
         <div class="drawer-image-placeholder" style="display:none;">🦈</div>`
     : `<div class="drawer-image-placeholder">🦈</div>`;
 
-    // Walidacja danych wejściowych przed renderowaniem
     const displayLength = shark.length ? `${shark.length} m` : '—';
     const displayWeight = shark.weight ? `${shark.weight} kg` : '—';
     return `
@@ -172,10 +171,9 @@ function buildGridCard(s) {
     const div = document.createElement('div');
     div.className = 'shark-grid-card';
 
-    // Ustawienie atrybutów identyfikujących rekina bezpośrednio przy tworzeniu elementu
+
     div.setAttribute('data-shark-id', s.sharkId || s.id);
 
-    // BEZPIECZNE KLIKNIĘCIE: Bez parsowania tekstu, przekazuje czysty obiekt z pamięci
     div.onclick = function() {
       if (typeof selectSharkFromGrid === 'function') {
         selectSharkFromGrid(s);
@@ -213,7 +211,7 @@ function buildGridCard(s) {
 
     const maxPings = Math.max(...clusters.map(c => c.totalPings), 1);
 
-    // Generujemy karty klastrów
+
     const cardsHTML = clusters.map((c, i) => `
       <div class="cluster-card">
         <div class="cluster-rank">#${i+1} HOT ZONE</div>
@@ -225,7 +223,7 @@ function buildGridCard(s) {
         <div style="font-size:9px;color:var(--text-dim);margin-top:5px;">${(c.centerLat||0).toFixed(4)}, ${(c.centerLon||0).toFixed(4)}</div>
       </div>`).join('');
 
-    // Wstrzykujemy przycisk "SHOW ON MAP" na górę panelu, a pod nim wygenerowane karty
+
     grid.innerHTML = `
       <div style="grid-column: 1 / -1; margin-bottom: 15px;">
         <button class="btn-primary" id="ana-show-on-map-btn" style="width:100%; background: var(--accent); color: var(--bg); font-weight: bold;">
@@ -234,7 +232,7 @@ function buildGridCard(s) {
       </div>
       ${cardsHTML}`;
 
-    // Podpinamy zdarzenie kliknięcia bezpośrednio po wstrzyknięciu HTML
+
     document.getElementById('ana-show-on-map-btn')?.addEventListener('click', () => {
       if (typeof window.transferClustersToMap === 'function') {
         window.transferClustersToMap();
