@@ -402,7 +402,7 @@
           "Admin Operations"
         ],
         "summary": "Trigger Recalibration",
-        "description": "Admin-only endpoint to trigger dynamic spatial re-mapping\nwhenever the OceanGrid architecture is modified.",
+        "description": "Admin-only endpoint to trigger dynamic spatial re-mapping whenever the\nOceanGrid architecture is modified. Always recalibrates against the\ntelemetry currently stored in Neo4j — it does not depend on any CSV\nfile on disk, so it works the same whether or not a seeding file exists.\nThe status flips to \"running\" synchronously here, before the response is\nsent, so a client polling /recalibrate/status right away never sees a\nstale \"done\" from a previous run.",
         "operationId": "trigger_recalibration_api_admin_recalibrate_post",
         "responses": {
           "200": {
@@ -412,6 +412,31 @@
                 "schema": {
                   "$ref": "#/components/schemas/RecalibrationResponse"
                 }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBasic": []
+          }
+        ]
+      }
+    },
+    "/api/admin/recalibrate/status": {
+      "get": {
+        "tags": [
+          "Admin Operations"
+        ],
+        "summary": "Get Recalibrate Status",
+        "description": "Returns the in-memory status of the most recent recalibration run, so the\nadmin panel can poll for completion instead of guessing with a fixed delay.",
+        "operationId": "get_recalibrate_status_api_admin_recalibrate_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -752,7 +777,7 @@
           "Admin Zone Management"
         ],
         "summary": "Delete Ocean Zone",
-        "description": "Performs a cascading DETACH DELETE to safely remove an OceanGrid node and its topology edges.",
+        "description": "Removes an OceanGrid node. Any PINGED_AT relations pointing at this zone are\nfirst re-pointed to the nearest remaining OceanGrid node (by geodesic distance),\npreserving the original timestamp/lat/lon of every ping, so telemetry is never\nsilently lost just because its zone got deleted. Refuses to delete the last\nremaining zone in the database, since there would be nowhere to move pings to.",
         "operationId": "delete_ocean_zone_api_admin_zones__grid_id__delete",
         "security": [
           {
