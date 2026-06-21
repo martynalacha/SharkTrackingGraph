@@ -66,7 +66,6 @@ def health_check():
     return {"status": "healthy", "database": "connected"}
 
 
-# Serwowanie frontendu
 frontend_dir = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
 
 app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")

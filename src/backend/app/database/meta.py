@@ -23,7 +23,7 @@ async def generate_meta_diagram() -> str:
         session = driver.session()
         try:
             result = await session.run(query)
-            # Fetch all records as a list since 'result' is async
+
             records = [record async for record in result]
             for record in records:
                 for node in record["nodes"]:

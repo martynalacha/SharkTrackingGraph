@@ -29,7 +29,6 @@ def generate_openapi_schema():
     os.makedirs(DOCS_DIR, exist_ok=True)
     schema_path = os.path.join(DOCS_DIR, "openapi.json")
 
-    # Fetch the schema generated automatically by FastAPI
     openapi_data = app.openapi()
 
     with open(schema_path, "w", encoding="utf-8") as f:
@@ -42,7 +41,6 @@ async def main():
     """Generates all dynamic documentation files for the project."""
     os.makedirs(DOCS_DIR, exist_ok=True)
 
-    # 1. Generate Database Documentation
     diagram = await generate_meta_diagram()
     constraints = await generate_meta_constraints()
 
@@ -65,10 +63,8 @@ async def main():
 
     print(f"Successfully generated {database_md_path}")
 
-    # 2. Generate OpenAPI Schema for REST API Specification
     generate_openapi_schema()
 
 
-# Fixed indentation: this block must be at the root level of the file
 if __name__ == "__main__":
     asyncio.run(main())

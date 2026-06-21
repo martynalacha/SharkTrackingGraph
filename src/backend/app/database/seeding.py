@@ -242,7 +242,6 @@ async def seed_database(clean_csv_path: str):
             logger.info("Database already seeded. Skipping.")
             return
 
-    # Create default OceanGrid nodes in the database from your baseline dictionary
     insert_grids_query = """
     UNWIND $grids AS grid
     MERGE (g:OceanGrid {gridId: grid.name})
@@ -256,7 +255,6 @@ async def seed_database(clean_csv_path: str):
 
     species_image_cache: dict[str, str] = {}
 
-    # Process and load unique Shark nodes
     df = pd.read_csv(clean_csv_path)
     sharks_df = df[["id", "name", "gender", "species", "weight", "length"]].drop_duplicates(subset=["id"])
     sharks_list = []
@@ -289,5 +287,4 @@ async def seed_database(clean_csv_path: str):
         await session.run(insert_sharks_query, sharks=sharks_list)
         logger.info("Loaded unique Shark nodes into Neo4j.")
 
-    # Generate or update graph connections
     await remap_telemetry_relations(df)

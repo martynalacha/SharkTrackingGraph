@@ -150,10 +150,8 @@ async def import_telemetry_csv(file: Annotated[UploadFile, File()]):
         }
 
     except HTTPException:
-        # FastAPI handles re-raised HTTPException automatically (e.g., returns 400)
         raise
     except Exception as e:
-        # Only unexpected system errors become 500
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal ingestion pipeline error: {str(e)}"
         ) from e

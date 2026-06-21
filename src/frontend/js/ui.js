@@ -34,7 +34,6 @@ const UI = (() => {
     }
 
     el.innerHTML = sharks.map(s => {
-      // Przekazujemy s.sharkId jako string do standardowej funkcji selectShark
       return `
       <div class="shark-card" data-id="${s.sharkId}" onclick="selectShark('${s.sharkId}')">
         ${thumbHTML(s, 40)}
