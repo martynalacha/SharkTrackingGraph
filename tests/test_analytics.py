@@ -82,41 +82,53 @@ async def test_verify_admin_invalid_credentials(async_client: AsyncClient):
 # ---------------------------------------------------------------------------
 # POST /api/admin/recalibrate
 # ---------------------------------------------------------------------------
+#
+# NOTE: recalibration no longer reads a "clean" CSV from disk — it always
+# recalibrates against whatever telemetry is currently stored in Neo4j, and
+# the route module no longer imports `os` or `pandas` at all. The old
+# "missing CSV -> 404" test has no equivalent anymore, so it's been replaced
+# below with coverage of the synchronous status flip and the new
+# /recalibrate/status endpoint.
 
 
 @pytest.mark.asyncio
-async def test_trigger_recalibration(async_client: AsyncClient, tmp_path):
-    """Returns 200 and starts background recalibration when clean CSV is present."""
+async def test_trigger_recalibration(async_client: AsyncClient):
+    """
+    Returns 200 and schedules the background remap task. The status must be
+    flipped to "running" synchronously (before the response is sent), so a
+    client polling /recalibrate/status right away never sees a stale "done".
+    """
     from src.backend.app.dependencies.auth import verify_admin_credentials
     from src.backend.app.main import app
-
-    # Create a minimal CSV so the path check passes
-    clean_csv = tmp_path / "sharks_data_clean.csv"
-    clean_csv.write_text("id,datetime,latitude,longitude\n")
 
     app.dependency_overrides[verify_admin_credentials] = lambda: None
 
     with (
-        patch("src.backend.app.routes.analytics.os.path.exists", return_value=True),
-        patch("src.backend.app.routes.analytics.pd.read_csv", return_value=MagicMock(iterrows=lambda: iter([]))),
-        patch("src.backend.app.routes.analytics.remap_telemetry_relations", new_callable=AsyncMock),
+        patch("src.backend.app.routes.analytics.set_recalibration_status") as mock_set_status,
+        patch("src.backend.app.routes.analytics.remap_telemetry_relations", new_callable=AsyncMock) as mock_remap,
     ):
         response = await async_client.post("/api/admin/recalibrate")
 
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "processing"
+    mock_set_status.assert_called_once_with("running")
+    mock_remap.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_trigger_recalibration_missing_csv(async_client: AsyncClient):
-    """Returns 404 when the clean CSV file is not present."""
+async def test_get_recalibration_status(async_client: AsyncClient):
+    """GET /api/admin/recalibrate/status  returns the in-memory recalibration status."""
     from src.backend.app.dependencies.auth import verify_admin_credentials
     from src.backend.app.main import app
 
     app.dependency_overrides[verify_admin_credentials] = lambda: None
 
-    with patch("src.backend.app.routes.analytics.os.path.exists", return_value=False):
-        response = await async_client.post("/api/admin/recalibrate")
+    with patch(
+        "src.backend.app.routes.analytics.get_recalibration_status",
+        return_value={"status": "done"},
+    ):
+        response = await async_client.get("/api/admin/recalibrate/status")
 
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert response.json()["status"] == "done"
