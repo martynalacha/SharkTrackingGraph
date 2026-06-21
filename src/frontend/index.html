@@ -194,7 +194,11 @@
           <div class="admin-form">
             <input class="filter-input" id="sc-id" placeholder="Shark ID *" />
             <input class="filter-input" id="sc-name" placeholder="Name *" />
-            <input class="filter-input" id="sc-species" placeholder="Species *" />
+            <select class="filter-select" id="sc-species-select">
+              <option value="">Select species *</option>
+              <option value="__new__">+ New species…</option>
+            </select>
+            <input class="filter-input hidden" id="sc-species" placeholder="New species name *" />
             <select class="filter-select" id="sc-gender">
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -209,12 +213,18 @@
         <div class="admin-section">
           <h3>EDIT / DELETE SHARK</h3>
           <div class="admin-form">
-            <input class="filter-input" id="se-id" placeholder="Shark ID to edit/delete" />
+            <select class="filter-select" id="se-id">
+              <option value="">Select shark…</option>
+            </select>
             <button class="btn-outline" id="se-load">LOAD</button>
           </div>
           <div class="admin-form hidden" id="shark-edit-form">
             <input class="filter-input" id="se-name" placeholder="Name" />
-            <input class="filter-input" id="se-species" placeholder="Species" />
+            <select class="filter-select" id="se-species-select">
+              <option value="">Select species</option>
+              <option value="__new__">+ New species…</option>
+            </select>
+            <input class="filter-input hidden" id="se-species" placeholder="New species name" />
             <select class="filter-select" id="se-gender">
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -245,7 +255,9 @@
         <div class="admin-section">
           <h3>EDIT / DELETE ZONE</h3>
           <div class="admin-form">
-            <input class="filter-input" id="ze-id" placeholder="Grid ID to edit/delete" />
+            <select class="filter-select" id="ze-id">
+              <option value="">Select zone…</option>
+            </select>
             <button class="btn-outline" id="ze-load">LOAD</button>
           </div>
           <div class="admin-form hidden" id="zone-edit-form">

@@ -16,6 +16,7 @@ async def create_ocean_zone(zone: OceanGridCreate):
     query = """
     CREATE (g:OceanGrid {
         gridId: $gridId,
+        name: $gridId,
         centerLat: toFloat($centerLat),
         centerLon: toFloat($centerLon)
     })
@@ -53,16 +54,60 @@ async def update_ocean_zone(grid_id: str, zone_data: OceanGridUpdate):
 @router.delete("/{grid_id}", status_code=status.HTTP_200_OK, response_model=DetailResponse)
 async def delete_ocean_zone(grid_id: str):
     """
-    Performs a cascading DETACH DELETE to safely remove an OceanGrid node and its topology edges.
+    Removes an OceanGrid node. Any PINGED_AT relations pointing at this zone are
+    first re-pointed to the nearest remaining OceanGrid node (by geodesic distance),
+    preserving the original timestamp/lat/lon of every ping, so telemetry is never
+    silently lost just because its zone got deleted. Refuses to delete the last
+    remaining zone in the database, since there would be nowhere to move pings to.
     """
-    query = """
+    check_other_zones_query = """
+    MATCH (g:OceanGrid {gridId: $grid_id})
+    MATCH (other:OceanGrid) WHERE other.gridId <> $grid_id
+    RETURN count(other) AS otherZoneCount
+    """
+
+    reassign_pings_query = """
+    MATCH (target:OceanGrid {gridId: $grid_id})
+    MATCH (s:Shark)-[r:PINGED_AT]->(target)
+    MATCH (other:OceanGrid) WHERE other.gridId <> $grid_id
+    WITH s, r, target, other,
+         point({latitude: target.centerLat, longitude: target.centerLon}) AS targetPoint,
+         point({latitude: other.centerLat, longitude: other.centerLon}) AS otherPoint
+    WITH s, r, other, point.distance(targetPoint, otherPoint) AS distanceMeters
+    ORDER BY distanceMeters ASC
+    WITH s, r, collect(other)[0] AS nearestZone
+    CREATE (s)-[newR:PINGED_AT {
+        timestamp: r.timestamp,
+        lat: r.lat,
+        lon: r.lon
+    }]->(nearestZone)
+    DELETE r
+    """
+
+    delete_zone_query = """
     MATCH (g:OceanGrid {gridId: $grid_id})
     DETACH DELETE g
     RETURN count(g) AS deleted_count
     """
+
     async with driver.session() as session:
-        result = await session.run(query, grid_id=grid_id)
+        exists_result = await session.run("MATCH (g:OceanGrid {gridId: $grid_id}) RETURN count(g) AS c", grid_id=grid_id)
+        exists_record = await exists_result.single()
+        if not exists_record or exists_record["c"] == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"OceanGrid node with ID '{grid_id}' not found.")
+
+        other_result = await session.run(check_other_zones_query, grid_id=grid_id)
+        other_record = await other_result.single()
+        if not other_record or other_record["otherZoneCount"] == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete the last remaining zone — its telemetry would have nowhere to go.",
+            )
+
+        await session.run(reassign_pings_query, grid_id=grid_id)
+
+        result = await session.run(delete_zone_query, grid_id=grid_id)
         record = await result.single()
         if record["deleted_count"] == 0:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"OceanGrid node with ID '{grid_id}' not found.")
-        return {"detail": f"OceanGrid zone '{grid_id}' and all associated path edges successfully deleted."}
+        return {"detail": f"OceanGrid zone '{grid_id}' deleted; its telemetry was reassigned to the nearest remaining zone."}
