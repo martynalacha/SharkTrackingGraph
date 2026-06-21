@@ -58,8 +58,6 @@ async def get_shark_trajectory(shark_id: str):
     Returns the chronological history of geographic points pinged by a specific shark,
     including zone coordinates and entity metadata for map visualization.
     """
-    # Uwaga: poprawiłem właściwości r.timestamp, r.lat, r.lon oraz g.gridId
-    # tak, aby odpowiadały dokładnie nazwom kluczy, które zapisały się w bazie w poprzednich krokach
     query = """
     MATCH (s:Shark {sharkId: $shark_id})-[r:PINGED_AT]->(g:OceanGrid)
     RETURN s.name AS name, s.species AS species, s.speciesImage AS image,

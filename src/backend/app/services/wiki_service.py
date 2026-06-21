@@ -37,15 +37,12 @@ class WikiService:
         Fetches a web-friendly, real photograph URL for a given biological species
         using Wikipedia REST API endpoints, filtering out technical diagrams.
         """
-        # Clean up any trailing spaces or duplicate internal spacing
         clean_name = " ".join(species_name.split())
         query_term = clean_name
 
-        # Extract scientific name from inside parentheses if present
         if "(" in clean_name and ")" in clean_name:
             query_term = clean_name.split("(")[1].split(")")[0]
 
-        # Standardize scientific names to proper biological nomenclature (Genus_species)
         query_parts = query_term.strip().split()
         if len(query_parts) >= 2:
             genus = query_parts[0].capitalize()
@@ -56,7 +53,6 @@ class WikiService:
 
         headers = {"User-Agent": "SharkTrackingGraphBot/1.0 (contact: admin@sharktrackinggraph.local)"}
 
-        # Step 1: Try the standard summary endpoint
         summary_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{query_term}"
         try:
             async with httpx.AsyncClient() as client:
@@ -70,13 +66,11 @@ class WikiService:
                     elif "originalimage" in data:
                         raw_url = data["originalimage"]["source"]
 
-                    # If the image is valid and not a diagram, return it immediately
                     if raw_url and not WikiService._is_invalid_diagram(raw_url):
                         return WikiService._scale_wikimedia_url(raw_url, width=500)
         except Exception as e:
             logger.error(f"Summary API failed for {query_term}: {e}")
 
-        # Step 2: Fallback to the media list endpoint if the primary image was a diagram
         media_url = f"https://en.wikipedia.org/api/rest_v1/page/media-list/{query_term}"
         try:
             async with httpx.AsyncClient() as client:
@@ -89,14 +83,12 @@ class WikiService:
                         if item.get("type") == "image":
                             srcset = item.get("srcset", [])
                             if srcset:
-                                # Pick the first available resolution from the image sources
                                 candidate_url = "https:" + srcset[0]["src"]
                                 if not WikiService._is_invalid_diagram(candidate_url):
                                     return WikiService._scale_wikimedia_url(candidate_url, width=500)
         except Exception as e:
             logger.error(f"Media list API failed for {query_term}: {e}")
 
-        # Hard fallback placeholder image if no valid photograph is resolved
         return "https://commons.wikimedia.org/wiki/File:No_image_available.svg"
 
 
@@ -127,5 +119,4 @@ if __name__ == "__main__":
             print(f"Result URL: {url}")
             print("-" * 90)
 
-    # Execute the asynchronous test loop
     asyncio.run(run_test())

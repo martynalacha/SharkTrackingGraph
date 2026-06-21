@@ -177,6 +177,16 @@ const API = (() => {
     return json;
   }
 
+  async function getRecalibrationStatus() {
+    const res = await fetch('/api/admin/recalibrate/status', {
+      method: 'GET',
+      headers: _authHeaders()
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.detail || 'Status fetch failed');
+    return json;
+  }
+
 
   async function getZoneTrajectories(gridId, start, end) {
     let url = `/api/zones/${encodeURIComponent(gridId)}/trajectories`;
@@ -207,6 +217,7 @@ const API = (() => {
     deleteZone,
     importTelemetryCSV,
     recalibrate,
+    getRecalibrationStatus,
     getZoneTrajectories
   };
 })();

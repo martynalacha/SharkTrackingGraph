@@ -1,10 +1,11 @@
-import os
-
-import pandas as pd
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends
 
 from src.backend.app.database.connection import driver
-from src.backend.app.database.seeding import remap_telemetry_relations
+from src.backend.app.database.seeding import (
+    get_recalibration_status,
+    remap_telemetry_relations,
+    set_recalibration_status,
+)
 from src.backend.app.dependencies.auth import verify_admin_credentials
 from src.backend.app.schemas.common import RecalibrationResponse, TelemetryDateRangeResponse
 
@@ -31,22 +32,30 @@ async def verify_admin():
 )
 async def trigger_recalibration(background_tasks: BackgroundTasks):
     """
-    Admin-only endpoint to trigger dynamic spatial re-mapping
-    whenever the OceanGrid architecture is modified.
+    Admin-only endpoint to trigger dynamic spatial re-mapping whenever the
+    OceanGrid architecture is modified. Always recalibrates against the
+    telemetry currently stored in Neo4j — it does not depend on any CSV
+    file on disk, so it works the same whether or not a seeding file exists.
+    The status flips to "running" synchronously here, before the response is
+    sent, so a client polling /recalibrate/status right away never sees a
+    stale "done" from a previous run.
     """
-    base_dir = os.path.dirname(os.path.dirname(__file__))
-    clean_csv_path = os.path.join(base_dir, "data", "sharks_data_clean.csv")
-
-    if not os.path.exists(clean_csv_path):
-        raise HTTPException(status_code=404, detail="Cleaned source telemetry file missing. Cannot recalibrate.")
-
-    # Read the historical data from file to match against new database state
-    df = pd.read_csv(clean_csv_path)
-
-    # Execute the heavy query in a background task to prevent blocking the REST API response
-    background_tasks.add_task(remap_telemetry_relations, df)
+    set_recalibration_status("running")
+    background_tasks.add_task(remap_telemetry_relations)
 
     return {"status": "processing", "message": "Spatial relationship recalibration started in background."}
+
+
+@router.get(
+    "/recalibrate/status",
+    dependencies=[Depends(verify_admin_credentials)],
+)
+async def get_recalibrate_status():
+    """
+    Returns the in-memory status of the most recent recalibration run, so the
+    admin panel can poll for completion instead of guessing with a fixed delay.
+    """
+    return get_recalibration_status()
 
 
 @router.get("/telemetry/date-range", response_model=TelemetryDateRangeResponse)

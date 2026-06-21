@@ -16,6 +16,36 @@ def _override_auth(app):
     app.dependency_overrides[verify_admin_credentials] = lambda: None
 
 
+def _mock_zone_delete_session(exists_count, other_zone_count, deleted_count):
+    """
+    Build a session mock for admin_zones.delete_ocean_zone, which now issues
+    4 sequential queries instead of one:
+      1. existence check                      -> record["c"]
+      2. count of *other* zones                -> record["otherZoneCount"]
+      3. reassignment of pings to nearest zone -> result is awaited, never read
+      4. the actual DETACH DELETE              -> record["deleted_count"]
+    Each `session.run()` call needs its own canned result, supplied here via
+    `side_effect`.
+    """
+    payloads = [
+        {"c": exists_count},
+        {"otherZoneCount": other_zone_count},
+        {},  # reassign_pings_query result — awaited but its value is never read
+        {"deleted_count": deleted_count},
+    ]
+    results = []
+    for payload in payloads:
+        result = MagicMock()
+        result.single = AsyncMock(return_value=payload)
+        results.append(result)
+
+    session = MagicMock()
+    session.run = AsyncMock(side_effect=results)
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=False)
+    return session
+
+
 # ===========================================================================
 # ADMIN SHARKS  —  /api/admin/sharks
 # ===========================================================================
@@ -360,17 +390,15 @@ async def test_update_ocean_zone_not_found(async_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_delete_ocean_zone(async_client: AsyncClient):
-    """DELETE /api/admin/zones/{id}  removes the zone and its edges."""
+    """
+    DELETE /api/admin/zones/{id}  reassigns the zone's telemetry to the nearest
+    remaining OceanGrid (preserving timestamp/lat/lon) and then removes the zone.
+    """
     from src.backend.app.main import app
 
     _override_auth(app)
 
-    mock_session = MagicMock()
-    mock_result = MagicMock()
-    mock_result.single = AsyncMock(return_value={"deleted_count": 1})
-    mock_session.run = AsyncMock(return_value=mock_result)
-    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-    mock_session.__aexit__ = AsyncMock(return_value=False)
+    mock_session = _mock_zone_delete_session(exists_count=1, other_zone_count=2, deleted_count=1)
 
     with patch("src.backend.app.routes.admin_zones.driver") as mock_driver:
         mock_driver.session.return_value = mock_session
@@ -378,24 +406,42 @@ async def test_delete_ocean_zone(async_client: AsyncClient):
 
     assert response.status_code == 200
     assert "ZONE_TEST" in response.json()["detail"]
+    # existence check, other-zone count, ping reassignment, delete
+    assert mock_session.run.await_count == 4
 
 
 @pytest.mark.asyncio
 async def test_delete_ocean_zone_not_found(async_client: AsyncClient):
-    """DELETE /api/admin/zones/{id}  returns 404 when zone does not exist."""
+    """DELETE /api/admin/zones/{id}  returns 404 when the zone does not exist."""
     from src.backend.app.main import app
 
     _override_auth(app)
 
-    mock_session = MagicMock()
-    mock_result = MagicMock()
-    mock_result.single = AsyncMock(return_value={"deleted_count": 0})
-    mock_session.run = AsyncMock(return_value=mock_result)
-    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
-    mock_session.__aexit__ = AsyncMock(return_value=False)
+    mock_session = _mock_zone_delete_session(exists_count=0, other_zone_count=0, deleted_count=0)
 
     with patch("src.backend.app.routes.admin_zones.driver") as mock_driver:
         mock_driver.session.return_value = mock_session
         response = await async_client.delete("/api/admin/zones/ZONE_GHOST")
 
     assert response.status_code == 404
+    # Should short-circuit on the existence check and never reach the later queries.
+    assert mock_session.run.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_delete_ocean_zone_last_remaining(async_client: AsyncClient):
+    """DELETE /api/admin/zones/{id}  refuses to delete the last remaining zone,
+    since its telemetry would have nowhere to be reassigned to."""
+    from src.backend.app.main import app
+
+    _override_auth(app)
+
+    mock_session = _mock_zone_delete_session(exists_count=1, other_zone_count=0, deleted_count=0)
+
+    with patch("src.backend.app.routes.admin_zones.driver") as mock_driver:
+        mock_driver.session.return_value = mock_session
+        response = await async_client.delete("/api/admin/zones/ZONE_ONLY")
+
+    assert response.status_code == 400
+    # Should stop right after the other-zone count check, before reassigning/deleting.
+    assert mock_session.run.await_count == 2

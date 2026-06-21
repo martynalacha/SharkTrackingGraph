@@ -15,7 +15,6 @@ async def get_zone_time_bounds(grid_id: str):
     a specific ocean zone or globally for all zones combined.
     """
     if grid_id == "ALL_ZONES":
-        # Globalne zapytanie o MIN i MAX ze wszystkich pingów w bazie
         query = """
         OPTIONAL MATCH (:Shark)-[r:PINGED_AT]->(:OceanGrid)
         RETURN "ALL_ZONES" AS gridId,
@@ -23,7 +22,6 @@ async def get_zone_time_bounds(grid_id: str):
                max(r.timestamp) AS absolute_end
         """
     else:
-        # Dotychczasowe zapytanie o konkretną strefę
         query = """
         MATCH (g:OceanGrid {gridId: $grid_id})
         OPTIONAL MATCH (:Shark)-[r:PINGED_AT]->(g)
@@ -81,54 +79,6 @@ async def get_zone_analysis(
             "totalUniqueSharksDetected": len(record["unique_sharks"]),
             "sharks": record["unique_sharks"],
         }
-
-
-# @router.get("/{grid_id}")
-# async def get_zone_analysis(
-#     grid_id: str,
-#     start_time: str = Query("2000-01-01 00:00:00", description="Start timestamp filter (YYYY-MM-DD HH:MM:SS)"),
-#     end_time: str = Query("2030-12-31 23:59:59", description="End timestamp filter (YYYY-MM-DD HH:MM:SS)"),
-# ):
-#     """
-#     Returns the details of a specific ocean sector along with a list of all
-#     unique sharks recorded within this zone inside the specified time range.
-#     It also returns the absolute min and max ping timestamps for calendar limits.
-#     """
-#     query = """
-#     MATCH (g:OceanGrid {gridId: $grid_id})
-
-#     # 1. Pobieramy bezwzględne, rzeczywiste ramy czasowe dla tej strefy
-#     OPTIONAL MATCH (:Shark)-[all_r:PINGED_AT]->(g)
-#     WITH g, min(all_r.timestamp) AS absolute_start, max(all_r.timestamp) AS absolute_end
-
-#     # 2. Wyciągamy rekiny pasujące do filtrów czasowych użytkownika
-#     OPTIONAL MATCH (s:Shark)-[r:PINGED_AT]->(g)
-#     WHERE r.timestamp >= $start_time AND r.timestamp <= $end_time
-
-#     RETURN g.gridId AS gridId, g.centerLat AS centerLat, g.centerLon AS centerLon,
-#            absolute_start, absolute_end,
-#            collect(DISTINCT s { .sharkId, .name, .species, .speciesImage }) AS unique_sharks
-#     """
-#     async with driver.session() as session:
-#         result = await session.run(query, grid_id=grid_id, start_time=start_time, end_time=end_time)
-#         record = result.single()
-
-#         if not record or record["gridId"] is None:
-#             raise HTTPException(status_code=404, detail=f"Ocean zone sector '{grid_id}' not found in the database.")
-
-#         return {
-#             "gridId": record["gridId"],
-#             "centerLat": record["centerLat"],
-#             "centerLon": record["centerLon"],
-#             # Rzeczywiste ramy czasowe z bazy (przekazujemy je do zablokowania kalendarzy)
-#             "zoneBounds": {
-#                 "start": record["absolute_start"] if record["absolute_start"] else "2018-01-01 00:00:00",
-#                 "end": record["absolute_end"] if record["absolute_end"] else "2026-12-31 23:59:00",
-#             },
-#             "filterPeriod": {"start": start_time, "end": end_time},
-#             "totalUniqueSharksDetected": len(record["unique_sharks"]),
-#             "sharks": record["unique_sharks"],
-#         }
 
 
 @router.get("/analysis/degree-centrality")

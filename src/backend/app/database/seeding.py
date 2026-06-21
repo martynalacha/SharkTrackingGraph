@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -7,6 +8,30 @@ from src.backend.app.database.connection import driver
 from src.backend.app.services.wiki_service import WikiService
 
 logger = logging.getLogger("uvicorn.error")
+
+_recalibration_state: dict = {
+    "status": "idle",
+    "startedAt": None,
+    "finishedAt": None,
+    "error": None,
+}
+
+
+def get_recalibration_status() -> dict:
+    """Returns a copy of the current in-memory recalibration status."""
+    return dict(_recalibration_state)
+
+
+def set_recalibration_status(status: str, error: str | None = None) -> None:
+    _recalibration_state["status"] = status
+    if status == "running":
+        _recalibration_state["startedAt"] = datetime.now(timezone.utc).isoformat()
+        _recalibration_state["finishedAt"] = None
+        _recalibration_state["error"] = None
+    else:
+        _recalibration_state["finishedAt"] = datetime.now(timezone.utc).isoformat()
+        _recalibration_state["error"] = error
+
 
 # Base baseline zones provided to initialize the database
 OCEARCH_ZONES: dict[str, tuple[float, float]] = {
@@ -141,29 +166,66 @@ async def attach_pings_to_grid(
     return total_pings
 
 
-async def remap_telemetry_relations(df: pd.DataFrame):
+async def remap_telemetry_relations(df: pd.DataFrame | None = None):
     """
-    Clears existing PINGED_AT relations and recalibrates them based on current OceanGrid nodes.
+    Clears existing PINGED_AT relations and recalibrates them against the
+    current OceanGrid layout. The live telemetry already stored in Neo4j is
+    the source of truth — zone deletions now reassign their pings to the
+    nearest remaining zone rather than discarding them, so the database
+    itself always has the full picture after the very first seed. The `df`
+    argument exists only for that first-time seeding call, when no PINGED_AT
+    relations exist yet for this function to read. Progress is tracked in
+    `_recalibration_state` so the admin panel can poll for completion.
     """
     logger.info("Recalibrating spatial telemetry relations in Neo4j...")
+    set_recalibration_status("running")
 
-    clear_relations_query = "MATCH ()-[r:PINGED_AT]->() DELETE r"
+    try:
+        fetch_existing_pings_query = """
+        MATCH (s:Shark)-[r:PINGED_AT]->(:OceanGrid)
+        RETURN s.sharkId AS sharkId, r.timestamp AS datetime, r.lat AS lat, r.lon AS lon
+        """
 
-    pings_payload = [
-        {
-            "sharkId": str(row["id"]),
-            "datetime": str(row["datetime"]),
-            "lat": float(row["latitude"]),
-            "lon": float(row["longitude"]),
-        }
-        for _, row in df.iterrows()
-    ]
+        async with driver.session() as session:
+            result = await session.run(fetch_existing_pings_query)
+            existing_records = await result.data()
 
-    async with driver.session() as session:
-        await session.run(clear_relations_query)
+        if existing_records:
+            pings_payload = [
+                {
+                    "sharkId": rec["sharkId"],
+                    "datetime": rec["datetime"],
+                    "lat": rec["lat"],
+                    "lon": rec["lon"],
+                }
+                for rec in existing_records
+                if rec["lat"] is not None and rec["lon"] is not None
+            ]
+        elif df is not None:
+            pings_payload = [
+                {
+                    "sharkId": str(row["id"]),
+                    "datetime": str(row["datetime"]),
+                    "lat": float(row["latitude"]),
+                    "lon": float(row["longitude"]),
+                }
+                for _, row in df.iterrows()
+            ]
+        else:
+            pings_payload = []
 
-    await attach_pings_to_grid(pings_payload, chunk_size=5000)
-    logger.info("Telemetry relations updated successfully.")
+        clear_relations_query = "MATCH ()-[r:PINGED_AT]->() DELETE r"
+
+        async with driver.session() as session:
+            await session.run(clear_relations_query)
+
+        await attach_pings_to_grid(pings_payload, chunk_size=5000)
+        logger.info("Telemetry relations updated successfully.")
+        set_recalibration_status("done")
+    except Exception as e:
+        logger.exception("Recalibration failed.")
+        set_recalibration_status("error", error=str(e))
+        raise
 
 
 async def seed_database(clean_csv_path: str):
@@ -180,7 +242,6 @@ async def seed_database(clean_csv_path: str):
             logger.info("Database already seeded. Skipping.")
             return
 
-    # Create default OceanGrid nodes in the database from your baseline dictionary
     insert_grids_query = """
     UNWIND $grids AS grid
     MERGE (g:OceanGrid {gridId: grid.name})
@@ -194,7 +255,6 @@ async def seed_database(clean_csv_path: str):
 
     species_image_cache: dict[str, str] = {}
 
-    # Process and load unique Shark nodes
     df = pd.read_csv(clean_csv_path)
     sharks_df = df[["id", "name", "gender", "species", "weight", "length"]].drop_duplicates(subset=["id"])
     sharks_list = []
@@ -227,5 +287,4 @@ async def seed_database(clean_csv_path: str):
         await session.run(insert_sharks_query, sharks=sharks_list)
         logger.info("Loaded unique Shark nodes into Neo4j.")
 
-    # Generate or update graph connections
     await remap_telemetry_relations(df)
